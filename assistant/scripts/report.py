@@ -167,9 +167,8 @@ def fetch_trending():
             "stars_total": int(stars.group(1).replace(",", "")) if stars else 0,
             "stars_today": int(today.group(1).replace(",", "")) if today else 0,
         })
-        if len(repos) >= 10:
-            break
     repos.sort(key=lambda r: r["stars_today"], reverse=True)
+    repos = repos[:10]  # 整页解析后按今日星数排序再截 Top10（页面顺序不按星数排，先截会漏高增速项目）
     for r in repos:  # 表格可读性：简介过长截断
         if len(r["desc"]) > 60:
             r["desc"] = r["desc"][:60].rstrip() + "…"
