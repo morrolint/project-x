@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "integrations": [
+    {
+      "id": "source-60s",
+      "type": "report-source",
+      "impl": "sources/news_60s.py",
+      "status": "active",
+      "added": "2026-10-07",
+      "kinds": ["morning"],
+      "provenance": "blog.intelexe.cn 每天60秒读懂世界；按标题日期匹配 archives 链接"
+    },
+    {
+      "id": "source-github-trending",
+      "type": "report-source",
+      "impl": "sources/github_trending.py",
+      "status": "active",
+      "added": "2026-10-07",
+      "kinds": ["morning", "evening"],
+      "provenance": "github.com/trending 整页解析，按今日星数降序；直连超时自动走代理"
+    },
+    {
+      "id": "source-weibo-hot",
+      "type": "report-source",
+      "impl": "sources/weibo_hot.py",
+      "status": "active",
+      "added": "2026-10-07",
+      "kinds": ["morning", "evening"],
+      "provenance": "微博官方接口 ajax/side/hotSearch（主）；tophub 节点已失效仅备用"
+    },
+    {
+      "id": "push-telegram",
+      "type": "push-channel",
+      "impl": "scripts/report.py#push_telegram",
+      "status": "active",
+      "added": "2026-10-09",
+      "provenance": "BotFather bot @m0rro_bot；凭据在 assistant/.secrets.env（git 忽略）"
+    },
+    {
+      "id": "skill-github-trending-deep-read",
+      "type": "skill",
+      "impl": "../skills/github-trending-deep-read/SKILL.md",
+      "status": "active",
+      "added": "2026-10-09",
+      "provenance": "用户 2026-10-09 要求 Trending 从'列名'升级为'逐项目解读'后提炼的方法"
+    },
+    {
+      "id": "cap-agent-reach",
+      "type": "capability",
+      "impl": null,
+      "status": "proposed",
+      "added": "2026-10-08",
+      "repo": "Panniantong/Agent-Reach",
+      "provenance": "调研结论（见 2026-10-08 会话）：多平台网页读取+多后端路由+社区维护，可作早报新源接入保险",
+      "note": "待用户批准后安装；Python 3.10+，MIT"
+    },
+    {
+      "id": "cap-pageindex",
+      "type": "capability",
+      "impl": null,
+      "status": "proposed",
+      "added": "2026-10-08",
+      "repo": "VectifyAI/PageIndex",
+      "provenance": "v2 文档库检索候选：vectorless 树索引，8 月起有本地模式",
+      "note": "接入时必须默认排除 docs/ 敏感文件（索引会把内容发给 LLM 提供商）"
+    },
+    {
+      "id": "harness-octop",
+      "type": "capability",
+      "impl": null,
+      "status": "evaluating",
+      "added": "2026-10-08",
+      "repo": "TencentCloud/Octop",
+      "provenance": "v1 候选：Python 自托管助手，原生飞书通道+记忆+知识库+cron；半天试装后再定 v1 自建范围"
+    }
+  ]
+}

@@ -5,30 +5,36 @@
     python3 report.py morning   [--date YYYY-MM-DD] [--output-dir DIR] [--force]
     python3 report.py evening   [--date YYYY-MM-DD] [--output-dir DIR] [--force]
 
-约定（见 AGENTS.md）：
+约定（见 AGENTS.md 与 assistant/integrations/README.md）：
+- 数据源全部是 integrations/sources/ 下的插件，本脚本不认识任何具体源；
+  新增数据源 = 放一个插件文件 + registry.json 加一行，本脚本零改动。
 - 任一数据源失败就跳过，并在报告"数据源与备注"注明，绝不中断整个报告。
+- Trending 每次抓取写入 reports/YYYY-MM-DD-trending.json（sidecar），
+  晚间对比读 morning 键，不依赖 markdown 表格（早报的表格会被自动化改写成逐项目解读）。
 - 输出写到 <assistant>/reports/（默认），已存在同名报告则跳过（--force 覆盖）。
 - 纯标准库，兼容系统 Python 3.9。
 """
 
 import argparse
 import html as htmllib
+import importlib.util
 import json
 import os
 import re
 import subprocess
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ASSISTANT_DIR = SCRIPT_DIR.parent
 DEFAULT_OUTPUT_DIR = ASSISTANT_DIR / "reports"
 TASKS_FILE = ASSISTANT_DIR / "TASKS.md"
+SOURCES_DIR = ASSISTANT_DIR / "integrations" / "sources"
+if str(SOURCES_DIR) not in sys.path:
+    sys.path.insert(0, str(SOURCES_DIR))
 
-DEFAULT_PROXY = "http://127.0.0.1:7892"  # SpeedCat VPN；ASSISTANT_PROXY=off 可禁用
-UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
+from _common import fmt_k  # noqa: E402  （共享工具与各源插件同目录）
 
 WEEKDAY_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
@@ -46,172 +52,84 @@ CN_KW = ["我国", "中国", "国内", "全国", "国家", "中央", "国务院"
 SPORTS_KW = ["夺冠", "冠军", "决赛", "联赛", "世界杯", "奥运", "锦标赛", "进球",
              "晋级", "赛季", "男单", "女单", "男团", "女团", "连胜"]
 
-
-# ---------------------------------------------------------------- HTTP
-# 用系统 curl 而非 urllib：macOS 系统 Python(LibreSSL) 与本地代理栈存在 TLS 兼容问题，
-# curl 实测全部源直连/代理均稳定。
-
-def http_get(url, timeout=15, allow_proxy=True, extra_headers=None, retries=2):
-    """GET 一个 URL 返回文本。直连失败走代理，每条路径重试一次。返回 (文本|None, 途径说明|None, 错误说明)。"""
-    import time
-    proxy = os.environ.get("ASSISTANT_PROXY", DEFAULT_PROXY)
-    if proxy and proxy.lower() in ("off", "none", ""):
-        allow_proxy = False
-    headers = ["-A", UA, "-H", "Accept-Language: zh-CN,zh;q=0.9,en;q=0.8"]
-    if extra_headers:
-        for k, v in extra_headers.items():
-            headers += ["-H", f"{k}: {v}"]
-    paths = [("直连", [])]
-    if allow_proxy and proxy:
-        paths.append(("代理 " + proxy, ["-x", proxy]))
-    last_err = "未知错误"
-    for label, px_args in paths:
-        for attempt in range(1, retries + 1):
-            cmd = ["curl", "-sSL", "--connect-timeout", "8", "--max-time", str(timeout),
-                   *headers, *px_args, url]
-            try:
-                r = subprocess.run(cmd, capture_output=True, timeout=timeout + 5)
-            except subprocess.TimeoutExpired:
-                last_err = "curl 超时"
-                continue
-            if r.returncode == 0 and r.stdout:
-                return r.stdout.decode("utf-8", errors="replace"), label, None
-            err_detail = r.stderr.decode("utf-8", errors="replace").strip().splitlines()
-            last_err = f"curl exit {r.returncode}: {err_detail[-1] if err_detail else '无输出'}"
-            if attempt < retries:
-                time.sleep(1)
-    return None, None, last_err
+# 语义槽位 → 插件 ID（渲染函数按槽位取数；新增槽位属架构变更，走提案）
+SLOTS = {"news": "source-60s", "trending": "source-github-trending", "hot": "source-weibo-hot"}
 
 
-# ---------------------------------------------------------------- 数据源
+# ---------------------------------------------------------------- 数据源插件加载
 
-def fetch_60s(target_date):
-    """每天60秒读懂世界。返回 (dict|None, note)。"""
-    index_html, via, err = http_get("https://blog.intelexe.cn/")
-    if index_html is None:
-        return None, f"索引页抓取失败（{err}）"
-    post_url = None
-    for m in re.finditer(r'<a[^>]+href="(https://blog\.intelexe\.cn/archives/\d+)"[^>]*>(.*?)</a>',
-                         index_html, re.S):
-        title = re.sub(r"<[^>]+>", "", m.group(2)).strip()
-        if target_date.isoformat() in title and "读懂世界" in title:
-            post_url = m.group(1)
-            break
-    if not post_url:
-        return None, f"索引页未找到 {target_date.isoformat()} 的文章（可能尚未发布）"
-    post_html, _, err = http_get(post_url)
-    if post_html is None:
-        return None, f"正文抓取失败（{err}）"
-    seg = post_html.split('class="entry-content"', 1)
-    if len(seg) < 2:
-        return None, "正文结构变化：未找到 entry-content"
-    body = seg[1]
-    cut = body.find("<!-- .entry-content")
-    if cut > 0:
-        body = body[:cut]
-    paras = []
-    for pm in re.finditer(r"<p[^>]*>(.*?)</p>", body, re.S):
-        text = htmllib.unescape(re.sub(r"<[^>]+>", "", pm.group(1))).strip()
-        if text:
-            paras.append(text)
-    numbered = {}
-    for p in paras:
-        m = re.match(r"^(\d{1,2})、\s*(.*)", p)
-        if m:
-            text = m.group(2).rstrip("；;。") + "。"
-            numbered.setdefault(int(m.group(1)), text)
-    items = [numbered[d] for d in sorted(numbered)]
-    weiyu = next((p for p in paras if p.startswith("【微语】")), "")
-    weiyu = weiyu.replace("【微语】", "").strip()
-    if not items:
-        return None, "正文中未解析出编号条目（页面结构可能变化）"
-    note = f"[每天60秒读懂世界]({post_url}) 完整 {len(items)} 条" + ("，含微语" if weiyu else "")
-    if via and "直连" not in via:
-        note += f"（经{via}）"
-    return {"items": items, "weiyu": weiyu, "url": post_url}, note
-
-
-def _fmt_k(n):
-    """278411 -> 278k；18097 -> 18.1k；1200000 -> 1.2M"""
-    if n >= 1_000_000:
-        s = f"{n / 1e6:.1f}M"
-    elif n >= 100_000:
-        s = f"{n / 1e3:.0f}k"
-    else:
-        s = f"{n / 1e3:.1f}k"
-    if "." in s:
-        s = s.rstrip("0").rstrip(".")
-    return s
-
-
-def fetch_trending():
-    """GitHub Trending Top10。返回 (list|None, note)。"""
-    page, via, err = http_get("https://github.com/trending", timeout=15)
-    if page is None:
-        return None, f"抓取失败（{err}）"
-    rows = re.findall(r'<article class="Box-row">(.*?)</article>', page, re.S)
-    repos = []
-    for r in rows:
-        name = re.search(r'<h2[^>]*>.*?href="/([^"]+)"', r, re.S)
-        if not name:
+def load_source_plugins():
+    """发现并加载 sources/*.py 插件（_ 开头的为共享工具，跳过）。"""
+    plugins = []
+    for p in sorted(SOURCES_DIR.glob("*.py")):
+        if p.name.startswith("_"):
             continue
-        desc = re.search(r'<p class="col-9[^"]*">\s*(.*?)\s*</p>', r, re.S)
-        lang = re.search(r'itemprop="programmingLanguage">([^<]+)<', r)
-        stars = re.search(r'href="/[^"]+/stargazers[^"]*".*?</svg>\s*([\d,]+)', r, re.S)
-        today = re.search(r"([\d,]+)\s+stars today", r)
-        repos.append({
-            "name": name.group(1),
-            "url": "https://github.com/" + name.group(1),
-            "desc": htmllib.unescape(re.sub(r"<[^>]+>", "", desc.group(1)).strip()) if desc else "",
-            "lang": lang.group(1) if lang else "—",
-            "stars_total": int(stars.group(1).replace(",", "")) if stars else 0,
-            "stars_today": int(today.group(1).replace(",", "")) if today else 0,
-        })
-    repos.sort(key=lambda r: r["stars_today"], reverse=True)
-    repos = repos[:10]  # 整页解析后按今日星数排序再截 Top10（页面顺序不按星数排，先截会漏高增速项目）
-    for r in repos:  # 表格可读性：简介过长截断
-        if len(r["desc"]) > 60:
-            r["desc"] = r["desc"][:60].rstrip() + "…"
-    if not repos:
-        return None, "页面结构变化：未解析出任何仓库"
-    note = "[github.com/trending](https://github.com/trending) 实时抓取 Top10"
-    if via and "直连" not in via:
-        note += f"（经{via}）"
-    return repos, note
-
-
-def fetch_weibo_hot():
-    """微博热搜 Top10。主源：微博官方接口；备用：tophub。返回 (list|None, note)。"""
-    html, via, err = http_get(
-        "https://weibo.com/ajax/side/hotSearch", timeout=10, allow_proxy=False,
-        extra_headers={"Referer": "https://weibo.com/"})
-    if html:
+        spec = importlib.util.spec_from_file_location(f"assistant_source_{p.stem}", p)
+        mod = importlib.util.module_from_spec(spec)
         try:
-            data = json.loads(html)
-            items = [it for it in data["data"]["realtime"] if not it.get("is_ad")]
-            hot = [{"word": it["word"].strip().strip("#"),
-                    "num": int(it.get("num") or 0),
-                    "label": it.get("icon_desc") or ""} for it in items[:10]]
-            if hot:
-                return hot, "[微博热搜](https://s.weibo.com/top/summary) 官方接口实时抓取 Top10"
-        except (ValueError, KeyError, TypeError) as e:
-            err = f"接口解析失败（{type(e).__name__}）"
-    # 备用源 tophub
-    html2, _, err2 = http_get("https://tophub.today/n/KqndgxeLl9", timeout=10)
-    if html2:
-        tds = re.findall(r'<td class="al"[^>]*>(.*?)</td>', html2, re.S)
-        words = []
-        for td in tds:
-            t = htmllib.unescape(re.sub(r"<[^>]+>", "", td)).strip()
-            t = re.sub(r"\d+\.\s*", "", t).strip()
-            if t and "加载" not in t and "快照" not in t:
-                words.append({"word": t, "num": 0, "label": ""})
-        if words:
-            return words[:10], "[tophub](https://tophub.today) 快照 Top10（备用源，无热度值）"
-    return None, f"抓取失败（{err}；备用源也不可用：{err2}）"
+            spec.loader.exec_module(mod)
+        except Exception as e:  # noqa: BLE001 —— 单个插件坏不拖垮其他源
+            print(f"⚠️ 数据源插件 {p.name} 加载失败：{type(e).__name__}: {e}", file=sys.stderr)
+            continue
+        if hasattr(mod, "fetch") and hasattr(mod, "ID"):
+            plugins.append(mod)
+    return plugins
 
 
-# ---------------------------------------------------------------- 收件箱
+def collect_sources(target_date, kind):
+    """调用当班次所需插件。返回 (news, trending, hot, source_notes)。"""
+    notes, results = [], {}
+    for mod in load_source_plugins():
+        if kind not in getattr(mod, "KINDS", ()):
+            continue
+        try:
+            data, note = mod.fetch(target_date)
+        except Exception as e:  # noqa: BLE001 —— 插件异常按该源失败处理
+            data, note = None, f"插件异常（{type(e).__name__}: {e}）"
+        results[mod.ID] = data
+        if data:
+            notes.append(f"✅ {note}")
+        else:
+            notes.append(f"⚠️ {mod.NAME}：{note}")
+    if kind == "evening":
+        notes.insert(0, "ℹ️ 中文要闻源为晨间聚合，晚间简报不含（白天动态以热搜晚间榜为准）")
+    return (results.get(SLOTS["news"]), results.get(SLOTS["trending"]),
+            results.get(SLOTS["hot"]), notes)
+
+
+def trending_sidecar_path(out_dir, target_date):
+    return Path(out_dir) / f"{target_date.isoformat()}-trending.json"
+
+
+def update_trending_sidecar(out_dir, target_date, kind, trending):
+    """把本次抓取合入 sidecar（morning/evening 各占一键），供晚间对比与将来复盘。"""
+    path = trending_sidecar_path(out_dir, target_date)
+    data = {}
+    if path.exists():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except ValueError:
+            data = {}
+    data[kind] = {"fetched_at": datetime.now().isoformat(timespec="seconds"),
+                  "repos": trending or []}
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    return path
+
+
+def load_morning_trending(out_dir, target_date):
+    """读 sidecar 的 morning 键 → {name: (排名, 今日星数)}；缺失/损坏返回 None。"""
+    path = trending_sidecar_path(out_dir, target_date)
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except ValueError:
+        return None
+    m = (data.get("morning") or {}).get("repos") or []
+    if not m:
+        return None
+    return {r["name"]: (i, r.get("stars_today", 0)) for i, r in enumerate(m, 1)}
+
 
 # ---------------------------------------------------------------- 推送
 
@@ -234,6 +152,7 @@ def push_telegram(text):
         return False, "未配置（.secrets.env 缺 TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID）"
     if len(text) > 4000:
         text = text[:4000].rstrip() + "…"
+    from _common import DEFAULT_PROXY
     proxy = os.environ.get("ASSISTANT_PROXY", DEFAULT_PROXY)
     px_args = ["-x", proxy] if proxy and proxy.lower() not in ("off", "none", "") else []
     payload = json.dumps({"chat_id": int(chat_id), "text": text, "parse_mode": "HTML",
@@ -281,6 +200,8 @@ def build_push_text(kind, target_date, out_path, news, trending, hot, pending):
     return "\n".join(lines)
 
 
+# ---------------------------------------------------------------- 收件箱
+
 def read_inbox():
     """读 TASKS.md 待办区。返回 (待办列表, 是否读到文件)。"""
     if not TASKS_FILE.exists():
@@ -320,7 +241,7 @@ def _trending_table(repos):
         fire = "🔥 " if i == 1 else ""
         desc = r["desc"].replace("|", "/")
         lines.append(f"| {i} | [{r['name']}]({r['url']}) | {desc} | {r['lang']} | "
-                     f"{fire}+{r['stars_today']:,} / {_fmt_k(r['stars_total'])} |")
+                     f"{fire}+{r['stars_today']:,} / {fmt_k(r['stars_total'])} |")
     return lines
 
 
@@ -404,31 +325,7 @@ def render_morning(target_date, news, trending, hot, notes):
     return "\n".join(lines) + "\n"
 
 
-# ---- 晚间简报：与早报 Trending 对比 ----
-
-def _parse_morning_trending(morning_path):
-    """从早报 markdown 解析 trending 表：{name: (rank, stars_today:int)}。"""
-    if not morning_path.exists():
-        return None
-    try:
-        text = morning_path.read_text(encoding="utf-8")
-    except OSError:
-        return None
-    result = {}
-    rank = 0
-    for line in text.splitlines():
-        m = re.match(r"\|\s*(\d+)\s*\|\s*\[([^\]]+)\]\(https://github\.com/[^)]+\)\s*\|", line)
-        if m:
-            rank = int(m.group(1))
-            stars = 0
-            sm = re.search(r"\+\s*([\d,]+)\s*/", line)
-            if sm:
-                stars = int(sm.group(1).replace(",", ""))
-            result[m.group(2)] = (rank, stars)
-    return result or None
-
-
-def render_evening(target_date, trending, hot, morning_trending, morning_path, notes):
+def render_evening(target_date, trending, hot, morning_trending, notes):
     lines = [
         f"# 晚间简报 · {target_date.isoformat()}（{WEEKDAY_CN[target_date.weekday()]}）",
         "",
@@ -452,7 +349,7 @@ def render_evening(target_date, trending, hot, morning_trending, morning_path, n
     if not trending:
         lines.append("- ⚠️ GitHub Trending 晚间抓取失败，见文末备注。")
     elif morning_trending is None:
-        lines.append(f"（未找到今日早报，无法对比；以下为晚间实时 Top10）")
+        lines.append("（未找到今日早报数据，无法对比；以下为晚间实时 Top10）")
         lines += _trending_table(trending)
     else:
         lines.append("| # | 项目 | 早间 → 晚间排名 | 变化 | 今日星数（早 → 晚） |")
@@ -490,26 +387,11 @@ def render_evening(target_date, trending, hot, morning_trending, morning_path, n
     lines += ["", "## 数据源与备注", ""]
     lines += [f"- {n}" for n in notes["sources"]]
     if trending and morning_trending is not None:
-        lines.append(f"- Trending 对比基准：[{morning_path.name}]({morning_path.name}) 表格")
+        lines.append(f"- Trending 对比基准：{target_date.isoformat()}-trending.json · morning 键")
     return "\n".join(lines) + "\n"
 
 
 # ---------------------------------------------------------------- 主流程
-
-def collect_sources(target_date, kind):
-    """抓取本报告需要的源。返回 (news, trending, hot, source_notes)。"""
-    source_notes, news, trending, hot = [], None, None, None
-    if kind == "morning":
-        news, note = fetch_60s(target_date)
-        source_notes.append(("✅ " if news else "⚠️ 中文要闻：") + note)
-    else:
-        source_notes.append("ℹ️ 中文要闻源为晨间聚合，晚间简报不含（白天动态以热搜晚间榜为准）")
-    trending, note = fetch_trending()
-    source_notes.append(("✅ GitHub Trending：" if trending else "⚠️ GitHub Trending：") + note)
-    hot, note = fetch_weibo_hot()
-    source_notes.append(("✅ 热搜：" if hot else "⚠️ 热搜：") + note)
-    return news, trending, hot, source_notes
-
 
 def main():
     parser = argparse.ArgumentParser(description="个人助手 早报/晚间简报 生成脚本")
@@ -535,6 +417,7 @@ def main():
 
     print(f"抓取数据源（{args.kind} · {target_date.isoformat()}）…")
     news, trending, hot, source_notes = collect_sources(target_date, args.kind)
+    update_trending_sidecar(out_dir, target_date, args.kind, trending)
     pending, has_tasks_file = read_inbox()
     notes = {"output_dir": str(out_dir), "pending": pending,
              "has_tasks_file": has_tasks_file, "sources": source_notes}
@@ -542,10 +425,8 @@ def main():
     if args.kind == "morning":
         content = render_morning(target_date, news, trending, hot, notes)
     else:
-        morning_path = out_dir / f"{target_date.isoformat()}-早报.md"
-        morning_trending = _parse_morning_trending(morning_path)
-        content = render_evening(target_date, trending, hot, morning_trending,
-                                 morning_path, notes)
+        morning_trending = load_morning_trending(out_dir, target_date)
+        content = render_evening(target_date, trending, hot, morning_trending, notes)
 
     out_path.write_text(content, encoding="utf-8")
     ok = sum(1 for n in source_notes if n.startswith("✅"))

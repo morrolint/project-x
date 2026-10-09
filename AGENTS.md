@@ -20,10 +20,19 @@
 
 ```
 assistant/
-├── TASKS.md    任务收件箱（一行一条；完成后移入"已完成"区）
-├── reports/    早报 YYYY-MM-DD-早报.md；晚间简报 YYYY-MM-DD-晚间简报.md
-└── docs/       个人文件库（含证件等敏感文件：仅在用户明确要求时读取，日常流程不扫描）
+├── TASKS.md        任务收件箱（一行一条；完成后移入"已完成"区）
+├── reports/        早报 YYYY-MM-DD-早报.md；晚间简报 YYYY-MM-DD-晚间简报.md；trending.json sidecar
+├── scripts/        report.py（报告生成+Telegram 推送）
+├── integrations/   集成子系统：README.md（契约铁律）/ registry.json（唯一事实来源）/ sources/（数据源插件）/ proposals/（接入提案）
+├── skills/         agent 技能库（纯方法 markdown，不含可执行代码）
+└── docs/           个人文件库（含证件等敏感文件：仅在用户明确要求时读取，日常流程不扫描）
 ```
+
+## 集成与扩展（2026-10-09 起）
+
+- **一切接入走标准管线**：registry.json 声明（唯一事实来源）→ 类型化契约（report-source / push-channel / skill / capability / 预留 channel-inbound、memory）→ 生命周期（proposed→evaluating→active→retired）。细则见 `assistant/integrations/README.md` 四铁律。
+- report.py 不认识任何具体数据源：新增源 = sources/ 放插件 + registry 加一行，脚本零改动。
+- 自动化发现的有价值项目：纯方法类可直接固化为 skill（markdown）；需要装代码/服务/凭据的一律写 proposals/ 提案，用户在 TASKS.md 写"批准 <id>"后才执行。**禁止私自 pip/npm 安装。**
 
 ## 早报数据源（已验证可用）
 

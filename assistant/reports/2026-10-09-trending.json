@@ -1,0 +1,79 @@
+{
+ "morning": {
+  "fetched_at": "2026-10-09T09:44:26",
+  "repos": [
+   {
+    "name": "morluto/rea",
+    "url": "https://github.com/morluto/rea",
+    "desc": "Reverse engineer anything with agents, from app behavior dow…",
+    "lang": "TypeScript",
+    "stars_total": 27141,
+    "stars_today": 7738
+   },
+   {
+    "name": "boykopovar/AnyPS5",
+    "url": "https://github.com/boykopovar/AnyPS5",
+    "desc": "Tool for automatic PS5 executables porting to Linux and Wind…",
+    "lang": "C++",
+    "stars_total": 15937,
+    "stars_today": 4669
+   },
+   {
+    "name": "storytold/artcraft",
+    "url": "https://github.com/storytold/artcraft",
+    "desc": "ArtCraft is an intentional crafting engine for artists, desi…",
+    "lang": "Rust",
+    "stars_total": 8075,
+    "stars_today": 2103
+   },
+   {
+    "name": "mattpocock/skills",
+    "url": "https://github.com/mattpocock/skills",
+    "desc": "Skills for Real Engineers. Straight from my .agents director…",
+    "lang": "Shell",
+    "stars_total": 281151,
+    "stars_today": 1774
+   },
+   {
+    "name": "cathrynlavery/diagram-design",
+    "url": "https://github.com/cathrynlavery/diagram-design",
+    "desc": "Editorial diagram design for Claude Code, Codex, GitHub Copi…",
+    "lang": "HTML",
+    "stars_total": 46424,
+    "stars_today": 1160
+   },
+   {
+    "name": "thedotmack/claude-mem",
+    "url": "https://github.com/thedotmack/claude-mem",
+    "desc": "Persistent Context Across Sessions for Every Agent – Capture…",
+    "lang": "TypeScript",
+    "stars_total": 98500,
+    "stars_today": 670
+   },
+   {
+    "name": "liquidslr/system-design-notes",
+    "url": "https://github.com/liquidslr/system-design-notes",
+    "desc": "Notes of the book System Desgin Interview - An Insider's Gui…",
+    "lang": "—",
+    "stars_total": 24652,
+    "stars_today": 393
+   },
+   {
+    "name": "anthropics/knowledge-work-plugins",
+    "url": "https://github.com/anthropics/knowledge-work-plugins",
+    "desc": "Open source repository of plugins primarily intended for kno…",
+    "lang": "Python",
+    "stars_total": 27608,
+    "stars_today": 392
+   },
+   {
+    "name": "EpicGames/raddebugger",
+    "url": "https://github.com/EpicGames/raddebugger",
+    "desc": "A native, user-mode, multi-process, graphical debugger.",
+    "lang": "C",
+    "stars_total": 8124,
+    "stars_today": 279
+   }
+  ]
+ }
+}
