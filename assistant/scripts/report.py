@@ -213,6 +213,74 @@ def fetch_weibo_hot():
 
 # ---------------------------------------------------------------- 收件箱
 
+# ---------------------------------------------------------------- 推送
+
+def load_secrets():
+    """加载 assistant/.secrets.env（KEY=VALUE），已存在的环境变量优先。"""
+    path = ASSISTANT_DIR / ".secrets.env"
+    if path.exists():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k.strip(), v.strip())
+
+
+def push_telegram(text):
+    """推送 HTML 文本到 Telegram。返回 (是否成功, 错误说明)。未配置则返回 (False, '未配置')。"""
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
+    if not token or not chat_id:
+        return False, "未配置（.secrets.env 缺 TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID）"
+    if len(text) > 4000:
+        text = text[:4000].rstrip() + "…"
+    proxy = os.environ.get("ASSISTANT_PROXY", DEFAULT_PROXY)
+    px_args = ["-x", proxy] if proxy and proxy.lower() not in ("off", "none", "") else []
+    payload = json.dumps({"chat_id": int(chat_id), "text": text, "parse_mode": "HTML",
+                          "disable_web_page_preview": True})
+    cmd = ["curl", "-sS", "--connect-timeout", "8", "--max-time", "20", *px_args,
+           "-H", "Content-Type: application/json", "-d", payload,
+           f"https://api.telegram.org/bot{token}/sendMessage"]
+    try:
+        r = subprocess.run(cmd, capture_output=True, timeout=25)
+    except subprocess.TimeoutExpired:
+        return False, "curl 超时"
+    out = r.stdout.decode("utf-8", errors="replace")
+    try:
+        resp = json.loads(out)
+        if resp.get("ok"):
+            return True, ""
+        return False, f"API: {resp.get('description', out[:120])}"
+    except ValueError:
+        return False, f"非 JSON 响应: {out[:120] or r.stderr.decode('utf-8', errors='replace')[:120]}"
+
+
+def _esc(s):
+    return htmllib.escape(str(s), quote=False)
+
+
+def build_push_text(kind, target_date, out_path, news, trending, hot, pending):
+    """构造推送摘要（HTML）。"""
+    icon, title = ("🌅 早报", "早报") if kind == "morning" else ("🌙 晚间简报", "晚间简报")
+    lines = [f"{icon} <b>{title} · {target_date.isoformat()}（{WEEKDAY_CN[target_date.weekday()]}）</b>", ""]
+    if kind == "morning" and news:
+        lines.append("🗞️ <b>要闻速览</b>")
+        lines += [f"• {_esc(t[:60])}" for t in news["items"][:3]]
+        lines.append("")
+    if kind == "evening" and hot:
+        lines.append("🔥 <b>热搜 Top3</b>")
+        lines += [f"• {_esc(w['word'][:40])}" for w in hot[:3]]
+        lines.append("")
+    if trending:
+        lines.append("🐙 <b>GitHub Trending Top3</b>")
+        lines += [f"• {_esc(r['name'])} +{r['stars_today']:,} — {_esc(r['desc'][:50])}"
+                  for r in trending[:3]]
+        lines.append("")
+    lines.append(f"📥 收件箱：{'无待办' if not pending else f'{len(pending)} 条待办'}")
+    lines.append(f"📄 全文：<code>{_esc(out_path.name)}</code>")
+    return "\n".join(lines)
+
+
 def read_inbox():
     """读 TASKS.md 待办区。返回 (待办列表, 是否读到文件)。"""
     if not TASKS_FILE.exists():
@@ -485,6 +553,17 @@ def main():
     print(f"数据源 {ok}/{len(source_notes)} 可用；收件箱待办 {len(pending)} 条")
     for n in source_notes:
         print("  " + n.split("（")[0][:80])
+    # Telegram 推送（未配置则静默跳过；失败不阻断，备注进报告与 stdout）
+    load_secrets()
+    push_ok, push_err = push_telegram(
+        build_push_text(args.kind, target_date, out_path, news, trending, hot, pending))
+    if push_ok:
+        print("Telegram 推送成功")
+    else:
+        warn = f"⚠️ Telegram 推送失败：{push_err}"
+        print(warn)
+        with open(out_path, "a", encoding="utf-8") as f:
+            f.write(f"\n- {warn}\n")
     return 0
 
 
