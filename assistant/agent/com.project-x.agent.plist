@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- Project X 常驻 agent · launchd 模板。
+     部署（在运行机上）：
+       1. 把本文件里三处 __REPO_ROOT__ 替换为仓库绝对路径：
+          sed 's|__REPO_ROOT__|/实际/仓库/路径|g' \
+            assistant/agent/com.project-x.agent.plist \
+            > ~/Library/LaunchAgents/com.project-x.agent.plist
+       2. assistant/.secrets.env 备齐：TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID（已有）
+          + LLM_API_KEY（必填）、LLM_BASE_URL / LLM_MODEL（可选，默认智谱 GLM）
+       3. python3 assistant/agent/daemon.py --check   # 先自检
+       4. launchctl load ~/Library/LaunchAgents/com.project-x.agent.plist
+     卸载：launchctl unload ~/Library/LaunchAgents/com.project-x.agent.plist
+     崩溃自动重启（KeepAlive）；日志在 assistant/agent/logs/。 -->
+<dict>
+    <key>Label</key>
+    <string>com.project-x.agent</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/caffeinate</string>
+        <string>-i</string>
+        <string>/usr/bin/python3</string>
+        <string>__REPO_ROOT__/assistant/agent/daemon.py</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>__REPO_ROOT__</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>__REPO_ROOT__/assistant/agent/logs/daemon.stdout.log</string>
+    <key>StandardErrPath</key>
+    <string>__REPO_ROOT__/assistant/agent/logs/daemon.stderr.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin</string>
+    </dict>
+</dict>
+</plist>

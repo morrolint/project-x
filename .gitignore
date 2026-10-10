@@ -6,3 +6,4 @@ assistant/.secrets.env
 # 运行产物
 __pycache__/
 .DS_Store
+assistant/agent/logs/
