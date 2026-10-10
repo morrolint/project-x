@@ -1,19 +1,19 @@
 # Project X — 个人助手（自建轻量版）
 
-自建个人 AI 助手：飞书通道 + agent 循环（tool-use）+ 记忆层 + 定时汇报。Python，先跑在 Mac 本地。
+自建个人 AI 助手：Telegram 通道（常驻 agent）+ agent 循环（tool-use）+ 记忆层 + 定时汇报。Python，先跑在 Mac 本地。
 
 ## 已定决策（2026-10-07 与用户敲定，勿轻易推翻）
 
-- **通道**：飞书（个人免费版自建应用，国内直连，支持 webhook 与长连接）
+- **通道**：Telegram 先行（**2026-10-09 用户确认，推翻 10-07 的飞书优先**：推送链路已验证、用户日常在用；代价是收发全程依赖本机代理 127.0.0.1:7892。飞书预留——通道抽象留位，要国内直连时再接）
 - **技术栈**：Python
-- **部署**：先 Mac 本地（launchd 常驻），后续可平移 VPS/NAS
+- **部署**：Mac 本地（launchd 常驻）。**2026-10-10 用户定盘：载体 = 本机（Mac mini，M6/16GB），另一台 Mac mini 退役不再运行**（单机拓扑：无跨机同步，仓库即生产副本，origin 推送从可选升级为备份刚需）
 - **LLM**：做成可切换——OpenAI 兼容接口 + 环境变量（候选：GLM 智谱 / DeepSeek / Claude）
 - **源起**：用户嫌 OpenClaw 重 → 先用 ZCode 充当助手探索验证（2026-10-07）→ 决定固化为正式项目
 
 ## 蓝图
 
-- **v0（当前待做）**：确定性脚本——早报/晚间简报（抓取 → 渲染 markdown → 写 `assistant/reports/`），launchd/cron 驱动，接管下述自动化
-- **v1**：飞书 bot + agent 循环（读写文件 / 联网搜索 / 处理收件箱）+ markdown 记忆层
+- **v0（✅ 已完成 2026-10-07）**：确定性脚本——早报/晚间简报（抓取 → 渲染 markdown → 写 `assistant/reports/`），launchd/cron 驱动，接管下述自动化
+- **v1（🚧 2026-10-09 动工）**：常驻 agent daemon（`assistant/agent/`，launchd 托管）+ Telegram 长轮询入站 + agent 循环（读写文件 / 联网搜索 / 处理收件箱 / 记忆）+ markdown 记忆层。最小闭环已写完（待运行机实测）；动因：用户嫌 ZCode 不够定制，要常驻+随时可达。Octop 不再试装，降级为源码级设计参考
 - **v2**：文档库检索、邮件入站、敏感文件留本地 + Tailscale 拓扑。参考项目：tinyhumansai/openhuman（118 个 OAuth 同步个人上下文）、rohitg00/agentmemory（agent 持久记忆）
 
 ## 目录约定
@@ -22,16 +22,19 @@
 assistant/
 ├── TASKS.md        任务收件箱（一行一条；完成后移入"已完成"区）
 ├── reports/        早报 YYYY-MM-DD-早报.md；晚间简报 YYYY-MM-DD-晚间简报.md；trending.json sidecar
-├── scripts/        report.py（报告生成+Telegram 推送）
-├── integrations/   集成子系统：README.md（契约铁律）/ registry.json（唯一事实来源）/ sources/（数据源插件）/ proposals/（接入提案）
+├── scripts/        report.py（报告生成；推送通道 = integrations/channels/ 插件，动态发现）
+├── agent/          v1 常驻 agent（入站通道插件化 agent/channels/ + tool-use 循环 + 确认门；见其 README）
+├── memory/         agent 长期记忆（markdown 按月归档，agent 运行时生成）
+├── integrations/   集成子系统：README.md（契约铁律）/ registry.json（唯一事实来源）/ check_registry.py（校验器）/ sources/（数据源插件）/ channels/（推送插件）/ proposals/（接入提案）
 ├── skills/         agent 技能库（纯方法 markdown，不含可执行代码）
+├── research/       调研档案（外部项目"抄作业清单"、吸收笔记；供后续会话与自动化查阅，不是集成）
 └── docs/           个人文件库（含证件等敏感文件：仅在用户明确要求时读取，日常流程不扫描）
 ```
 
 ## 集成与扩展（2026-10-09 起）
 
-- **一切接入走标准管线**：registry.json 声明（唯一事实来源）→ 类型化契约（report-source / push-channel / skill / capability / 预留 channel-inbound、memory）→ 生命周期（proposed→evaluating→active→retired）。细则见 `assistant/integrations/README.md` 四铁律。
-- report.py 不认识任何具体数据源：新增源 = sources/ 放插件 + registry 加一行，脚本零改动。
+- **一切接入走标准管线**：registry.json 声明（唯一事实来源）→ 类型化契约（report-source / push-channel / skill / capability / channel-inbound / memory）→ 生命周期（proposed→evaluating→active→rejected/retired）。细则见 `assistant/integrations/README.md` 四铁律。
+- report.py 不认识任何具体数据源/推送通道：新增源 = sources/ 放插件、新增推送 = channels/ 放插件，各 + registry 加一行，脚本零改动。registry 改动后跑 `python3 assistant/integrations/check_registry.py` 校验。
 - 自动化发现的有价值项目：纯方法类可直接固化为 skill（markdown）；需要装代码/服务/凭据的一律写 proposals/ 提案，用户在 TASKS.md 写"批准 <id>"后才执行。**禁止私自 pip/npm 安装。**
 
 ## 早报数据源（已验证可用）
@@ -49,7 +52,7 @@ assistant/
 
 ## 环境注意
 
-- git 全局代理 = 127.0.0.1:7892（SpeedCat VPN）；GitHub 直连会卡，VPN 客户端没开时 git 拉取会失败
+- git 全局代理（已退役的那台 mini）曾是 127.0.0.1:7892（SpeedCat VPN）；**本机（2026-10-10 起唯一载体）实测 7890**（.secrets.env 已设）。代理端口因机而异——换机部署先 `scutil --proxy` 实测，用 `ASSISTANT_PROXY` 覆盖即可，代码零改动。台式机睡眠管理一步到位：`sudo pmset -c sleep 0`（空闲不睡）+ `sudo pmset -c autorestart 1`（断电恢复自动开机）
 - 工作风格：用户中文交流，偏轻量方案、选型审慎；明确授权后放手自主推进，但**缺信息时直接问用户，不要扫描他的个人目录**
 
 ## 迁移状态（2026-10-07）
