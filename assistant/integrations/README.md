@@ -6,7 +6,7 @@
 ## 四条铁律
 
 1. **注册表是唯一事实来源**：任何集成本（无论多小）必须在 `registry.json` 有条目（id / type / status / provenance / added）。没有条目的集成视为不存在。
-2. **report.py 不认识任何具体数据源**：它只知道"插件契约"。新增数据源 = 在 `sources/` 放一个插件文件 + registry 加一行，report.py **零改动**。
+2. **report.py 不认识任何具体数据源与推送通道**：它只知道"插件契约"。新增数据源 = 在 `sources/` 放一个插件文件 + registry 加一行；新增推送通道 = 在 `channels/` 放一个插件文件 + registry 加一行；report.py **零改动**。
 3. **自动化不得私自安装代码**：从榜单/调研中发现的项目，纯方法/知识类可直接固化为 `../skills/` 下的 markdown 技能（不含可执行代码）；需要 pip/npm 安装、跑服务、配凭据的，一律写 `proposals/` 提案等用户批准。
 4. **失效要退役，不留死代码**：源长期失效 → 插件标 `retired`（registry 备注），插件文件移除；不满足于"跳过并备注"的僵尸集成。
 
@@ -15,11 +15,11 @@
 | type | 载体 | 契约 | 现状 |
 |---|---|---|---|
 | `report-source` | `sources/*.py` 插件 | 见下节 | ✅ 已运行（3 个源） |
-| `push-channel` | `scripts/report.py` 内函数 + `.secrets.env` 凭据 | `push(text) -> (ok, err)`，失败不阻断 | ✅ Telegram |
-| `skill` | `../skills/<name>/SKILL.md` | 纯方法文档：frontmatter(name/description) + 步骤；**不含可执行代码** | ✅ 首个技能已上线 |
+| `push-channel` | `channels/*.py` 插件 | `ID` + `NAME` + `push(text) -> (ok, err)`，失败不阻断；凭据走环境变量 | ✅ Telegram |
+| `skill` | `../skills/<name>/SKILL.md` | 纯方法文档：frontmatter(name/description) + 步骤；**不含可执行代码** | ✅ 3 个技能已上线 |
 | `capability` | 外部工具/服务（如 Agent-Reach、PageIndex） | 必须经提案批准后安装，安装方式与回滚步骤写进提案 | 📋 若干提案中 |
-| `channel-inbound` | v1（飞书/企微 bot 入站） | 预留：入站消息统一进 TASKS.md 收件箱 | 🔜 v1 |
-| `memory` | v1 记忆层 | 预留：retain/recall/reflect 三操作命名 | 🔜 v1 |
+| `channel-inbound` | `../agent/channels/*.py` 插件，daemon 按 `AGENT_CHANNEL` 选择 | 见下节 | 🚧 Telegram 开发中 |
+| `memory` | `../agent/memory.py` | `retain / recall` 已实现（reflect 属第二批）；markdown 按月归档 + 词元召回 | ✅ v0.1（随 v1 daemon 上线） |
 
 ## report-source 插件契约
 
@@ -40,6 +40,41 @@ def fetch(target_date):
 `_common.py` 提供共享设施：`http_get`（curl 子进程，直连→代理→重试）、UA、代理配置（环境变量 `ASSISTANT_PROXY=off` 可禁用）。
 
 **已知边界（升级空间）**：新数据源若要进报告的"新内容槽位"（不只是替换现有槽），需要同步扩展 report.py 的渲染函数——这类改动视为架构变更，走提案。
+
+## push-channel 插件契约
+
+文件放 `channels/`，不以 `_` 开头即被 report.py 动态发现。必须暴露：
+
+```python
+ID = "push-telegram"     # 与 registry 条目 id 一致
+NAME = "Telegram"        # 人读名（日志/报告备注用）
+
+def push(text):
+    """推一段文本。返回 (ok, err)；任何失败返回 (False, 原因)，
+    绝不抛异常、绝不中断报告。凭据从环境变量读（report.py 已加载 .secrets.env）。"""
+```
+
+## channel-inbound 插件契约（agent 侧）
+
+文件放 `../agent/channels/`，daemon 按 `AGENT_CHANNEL`（默认 telegram）加载。必须暴露：
+
+```python
+ID = "telegram"
+
+def create():
+    """从环境变量构建通道实例。返回 (client|None, err)。
+    client 需实现：poll() -> (updates, err) / send(text, reply_to=None) / chat_id 属性。"""
+```
+
+新增通道（如飞书）= 放插件 + registry 加一行 + 设 `AGENT_CHANNEL`，daemon 零改动。
+daemon 对 updates 的消费约定：只处理 `message.text`，非白名单 chat 记日志不响应。
+
+## registry 校验器（四铁律的机制化）
+
+改过 registry.json 或增删插件文件后必跑：`python3 assistant/integrations/check_registry.py`
+（自动化收件箱巡检动 registry 前后各跑一次）。检查：id 唯一、type/status 枚举、
+impl 文件存在且 source/channel 插件的 ID 常量与 registry id 双向对账、active 必有 impl、
+skill 契约抽查。退出码 0/1，可接自动化。
 
 ## skill 契约
 

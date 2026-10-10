@@ -7,7 +7,9 @@
       "impl": "sources/news_60s.py",
       "status": "active",
       "added": "2026-10-07",
-      "kinds": ["morning"],
+      "kinds": [
+        "morning"
+      ],
       "provenance": "blog.intelexe.cn 每天60秒读懂世界；按标题日期匹配 archives 链接"
     },
     {
@@ -16,8 +18,11 @@
       "impl": "sources/github_trending.py",
       "status": "active",
       "added": "2026-10-07",
-      "kinds": ["morning", "evening"],
-      "provenance": "github.com/trending 整页解析，按今日星数降序；直连超时自动走代理"
+      "kinds": [
+        "morning",
+        "evening"
+      ],
+      "provenance": "github.com/trending 整页解析，按当期星数降序；直连超时自动走代理。2026-10-10 fetch 支持 since=today/weekly/monthly（月榜场景固化），默认 today 早晚班行为不变"
     },
     {
       "id": "source-weibo-hot",
@@ -25,16 +30,20 @@
       "impl": "sources/weibo_hot.py",
       "status": "active",
       "added": "2026-10-07",
-      "kinds": ["morning", "evening"],
+      "kinds": [
+        "morning",
+        "evening"
+      ],
       "provenance": "微博官方接口 ajax/side/hotSearch（主）；tophub 节点已失效仅备用"
     },
     {
       "id": "push-telegram",
       "type": "push-channel",
-      "impl": "scripts/report.py#push_telegram",
+      "impl": "channels/telegram.py",
       "status": "active",
       "added": "2026-10-09",
-      "provenance": "BotFather bot @m0rro_bot；凭据在 assistant/.secrets.env（git 忽略）"
+      "provenance": "BotFather bot @m0rro_bot；凭据在 assistant/.secrets.env（git 忽略）",
+      "note": "2026-10-09 插件化：channels/ 目录动态发现，新增推送通道零改 report.py（原写死在 report.py#push_telegram）"
     },
     {
       "id": "skill-github-trending-deep-read",
@@ -45,6 +54,50 @@
       "provenance": "用户 2026-10-09 要求 Trending 从'列名'升级为'逐项目解读'后提炼的方法"
     },
     {
+      "id": "skill-diagram-design",
+      "type": "skill",
+      "impl": "../skills/diagram-design/SKILL.md",
+      "status": "active",
+      "added": "2026-10-09",
+      "provenance": "10-09 早报 ⭐ 项目 cathrynlavery/diagram-design（MIT）的方法论提炼：编辑级图表设计（先判断该不该画/语义模式选型/删除哲学/自包含 HTML+SVG）；经用户批准吸收"
+    },
+    {
+      "id": "skill-fresh-30d-research",
+      "type": "skill",
+      "impl": "../skills/fresh-30d-research/SKILL.md",
+      "status": "active",
+      "added": "2026-10-09",
+      "provenance": "cap-last30days 提案第一步（零安装）：mvanhorn/last30days-skill（MIT）的方法层提炼——多车道并行/实体锚定/互动加权/证据诚实度；早班与 v1 daemon 共用"
+    },
+    {
+      "id": "channel-telegram-inbound",
+      "type": "channel-inbound",
+      "impl": "../agent/channels/telegram.py",
+      "status": "evaluating",
+      "added": "2026-10-09",
+      "provenance": "v1 常驻 agent：Telegram 长轮询入站（2026-10-09 用户定盘 Telegram 先行，推翻 10-07 飞书优先）",
+      "note": "2026-10-09 通道插件化：daemon 按 AGENT_CHANNEL 动态发现 agent/channels/（飞书=新增插件+registry 行，零改 daemon）。最小闭环已过单测/冒烟；待运行机配 LLM_API_KEY 实测，跑通后转 active"
+    },
+    {
+      "id": "memory-markdown",
+      "type": "memory",
+      "impl": "../agent/memory.py",
+      "status": "active",
+      "added": "2026-10-09",
+      "provenance": "v1 记忆层 v0.1：markdown 按月归档（assistant/memory/）+ 词元召回；daemon 每轮自动注入 Top3 相关记忆",
+      "note": "retain/recall 已实现；reflect 与 BM25/双层结构（glossary 热缓存，见 research/ 抄作业清单）属第二批"
+    },
+    {
+      "id": "cap-rea",
+      "type": "capability",
+      "impl": null,
+      "status": "proposed",
+      "added": "2026-10-10",
+      "repo": "morluto/rea",
+      "provenance": "10-09 早报 ⭐（账本补登），10-10 深读 README：一个 MCP 给 agent 装上逆向工程能力（原生二进制/Electron/网站/APK/固件等 12 类目标），evidence-first 契约，MIT",
+      "note": "接入前提链：v1 daemon 需先支持 MCP 客户端（第二批）→ 目标机 Node 22+ → 原生分析需 Hopper/Ghidra/IDA。批准前不安装；其 evidence-first/引擎抽象两个设计点可零安装吸收"
+    },
+    {
       "id": "cap-agent-reach",
       "type": "capability",
       "impl": null,
@@ -52,7 +105,17 @@
       "added": "2026-10-08",
       "repo": "Panniantong/Agent-Reach",
       "provenance": "调研结论（见 2026-10-08 会话）：多平台网页读取+多后端路由+社区维护，可作早报新源接入保险",
-      "note": "待用户批准后安装；Python 3.10+，MIT"
+      "note": "待用户批准后安装；Python 3.10+，MIT。与 cap-last30days 定位重叠（早报新源），建议二选一评估"
+    },
+    {
+      "id": "cap-last30days",
+      "type": "capability",
+      "impl": null,
+      "status": "proposed",
+      "added": "2026-10-09",
+      "repo": "mvanhorn/last30days-skill",
+      "provenance": "用户 2026-10-09 推荐：跨 18 平台'近 30 天'调研引擎，按真实互动评分（Reddit/X/YouTube/HN/Polymarket/arXiv…），README 级评估完成",
+      "note": "提案见 proposals/2026-10-09-cap-last30days.md。第一步（零安装方法论提炼）✅ 已完成并落地 skill-fresh-30d-research（2026-10-09）；第二步装引擎仍待批（Python 3.12+）；与 cap-agent-reach 二选一评估"
     },
     {
       "id": "cap-pageindex",
@@ -68,10 +131,11 @@
       "id": "harness-octop",
       "type": "capability",
       "impl": null,
-      "status": "evaluating",
+      "status": "rejected",
       "added": "2026-10-08",
       "repo": "TencentCloud/Octop",
-      "provenance": "v1 候选：Python 自托管助手，原生飞书通道+记忆+知识库+cron；半天试装后再定 v1 自建范围"
+      "provenance": "原 v1 候选：Python 自托管助手，原生飞书通道+记忆+知识库+cron",
+      "note": "2026-10-09 用户定盘：不试装不安装，降级为源码级设计参考（消息归一化/工具循环）；通道已定 Telegram 先行，其飞书通道价值缩水。留档避免反复被提"
     }
   ]
 }

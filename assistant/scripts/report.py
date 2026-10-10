@@ -6,8 +6,8 @@
     python3 report.py evening   [--date YYYY-MM-DD] [--output-dir DIR] [--force]
 
 约定（见 AGENTS.md 与 assistant/integrations/README.md）：
-- 数据源全部是 integrations/sources/ 下的插件，本脚本不认识任何具体源；
-  新增数据源 = 放一个插件文件 + registry.json 加一行，本脚本零改动。
+- 数据源全部是 integrations/sources/ 下的插件，推送通道全部是 integrations/channels/ 下的
+  插件；本脚本不认识任何具体源/通道——新增任一 = 放插件文件 + registry.json 加一行，零改动。
 - 任一数据源失败就跳过，并在报告"数据源与备注"注明，绝不中断整个报告。
 - Trending 每次抓取写入 reports/YYYY-MM-DD-trending.json（sidecar），
   晚间对比读 morning 键，不依赖 markdown 表格（早报的表格会被自动化改写成逐项目解读）。
@@ -31,6 +31,7 @@ ASSISTANT_DIR = SCRIPT_DIR.parent
 DEFAULT_OUTPUT_DIR = ASSISTANT_DIR / "reports"
 TASKS_FILE = ASSISTANT_DIR / "TASKS.md"
 SOURCES_DIR = ASSISTANT_DIR / "integrations" / "sources"
+CHANNELS_DIR = ASSISTANT_DIR / "integrations" / "channels"
 if str(SOURCES_DIR) not in sys.path:
     sys.path.insert(0, str(SOURCES_DIR))
 
@@ -134,7 +135,7 @@ def load_morning_trending(out_dir, target_date):
 # ---------------------------------------------------------------- 推送
 
 def load_secrets():
-    """加载 assistant/.secrets.env（KEY=VALUE），已存在的环境变量优先。"""
+    """加载 assistant/.secrets.env（KEY=VALUE），已存在的环境变量优先。推送插件读环境变量取凭据。"""
     path = ASSISTANT_DIR / ".secrets.env"
     if path.exists():
         for line in path.read_text(encoding="utf-8").splitlines():
@@ -144,34 +145,23 @@ def load_secrets():
                 os.environ.setdefault(k.strip(), v.strip())
 
 
-def push_telegram(text):
-    """推送 HTML 文本到 Telegram。返回 (是否成功, 错误说明)。未配置则返回 (False, '未配置')。"""
-    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
-    if not token or not chat_id:
-        return False, "未配置（.secrets.env 缺 TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID）"
-    if len(text) > 4000:
-        text = text[:4000].rstrip() + "…"
-    from _common import DEFAULT_PROXY
-    proxy = os.environ.get("ASSISTANT_PROXY", DEFAULT_PROXY)
-    px_args = ["-x", proxy] if proxy and proxy.lower() not in ("off", "none", "") else []
-    payload = json.dumps({"chat_id": int(chat_id), "text": text, "parse_mode": "HTML",
-                          "disable_web_page_preview": True})
-    cmd = ["curl", "-sS", "--connect-timeout", "8", "--max-time", "20", *px_args,
-           "-H", "Content-Type: application/json", "-d", payload,
-           f"https://api.telegram.org/bot{token}/sendMessage"]
-    try:
-        r = subprocess.run(cmd, capture_output=True, timeout=25)
-    except subprocess.TimeoutExpired:
-        return False, "curl 超时"
-    out = r.stdout.decode("utf-8", errors="replace")
-    try:
-        resp = json.loads(out)
-        if resp.get("ok"):
-            return True, ""
-        return False, f"API: {resp.get('description', out[:120])}"
-    except ValueError:
-        return False, f"非 JSON 响应: {out[:120] or r.stderr.decode('utf-8', errors='replace')[:120]}"
+def load_push_channels():
+    """发现并加载 integrations/channels/*.py 推送插件（_ 开头为共享工具，跳过）。
+    本脚本不认识任何具体通道：新增推送 = 放插件 + registry.json 加一行，零改动。"""
+    plugins = []
+    for p in sorted(CHANNELS_DIR.glob("*.py")):
+        if p.name.startswith("_"):
+            continue
+        spec = importlib.util.spec_from_file_location(f"assistant_push_{p.stem}", p)
+        mod = importlib.util.module_from_spec(spec)
+        try:
+            spec.loader.exec_module(mod)
+        except Exception as e:  # noqa: BLE001 —— 单个插件坏不拖垮其他通道
+            print(f"⚠️ 推送插件 {p.name} 加载失败：{type(e).__name__}: {e}", file=sys.stderr)
+            continue
+        if hasattr(mod, "push") and hasattr(mod, "ID"):
+            plugins.append(mod)
+    return plugins
 
 
 def _esc(s):
@@ -434,17 +424,19 @@ def main():
     print(f"数据源 {ok}/{len(source_notes)} 可用；收件箱待办 {len(pending)} 条")
     for n in source_notes:
         print("  " + n.split("（")[0][:80])
-    # Telegram 推送（未配置则静默跳过；失败不阻断，备注进报告与 stdout）
+    # 推送：channels/ 插件逐个尝试（未配置则该通道自报失败；不阻断，备注进报告与 stdout）
     load_secrets()
-    push_ok, push_err = push_telegram(
-        build_push_text(args.kind, target_date, out_path, news, trending, hot, pending))
-    if push_ok:
-        print("Telegram 推送成功")
-    else:
-        warn = f"⚠️ Telegram 推送失败：{push_err}"
-        print(warn)
-        with open(out_path, "a", encoding="utf-8") as f:
-            f.write(f"\n- {warn}\n")
+    push_text = build_push_text(args.kind, target_date, out_path, news, trending, hot, pending)
+    for ch in load_push_channels():
+        push_ok, push_err = ch.push(push_text)
+        ch_name = getattr(ch, "NAME", ch.ID)
+        if push_ok:
+            print(f"{ch_name} 推送成功")
+        else:
+            warn = f"⚠️ {ch_name} 推送失败：{push_err}"
+            print(warn)
+            with open(out_path, "a", encoding="utf-8") as f:
+                f.write(f"\n- {warn}\n")
     return 0
 
 
