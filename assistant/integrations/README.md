@@ -41,7 +41,7 @@ def fetch(target_date):
 
 `_common.py` 提供共享设施：`http_get`（curl 子进程，直连→代理→重试）、UA、代理配置（环境变量 `ASSISTANT_PROXY=off` 可禁用）。
 
-**已知边界（升级空间）**：新数据源若要进报告的"新内容槽位"（不只是替换现有槽），需要同步扩展 report.py 的渲染函数——这类改动视为架构变更，走提案。
+**已知边界**：新数据源若要进报告的"新内容槽位"，需同步扩展 report.py 渲染函数——属架构变更，先立 ADR（见 docs/adr/ 与 assistant/ARCHITECTURE.md 的增长触发器）。
 
 ## push-channel 插件契约
 

@@ -39,11 +39,12 @@ import _http  # noqa: E402
 from daemon_state import STATE_FILE, load_state, save_state  # noqa: E402
 import llm  # noqa: E402
 import memory  # noqa: E402
+import scheduler as scheduler_mod  # noqa: E402
 import tasks as tasks_mod  # noqa: E402
 import tools as tools_mod  # noqa: E402
 
 CHANNELS_DIR = AGENT_DIR / "channels"
-STATE_FILE = AGENT_DIR / "state.json"   # update_offset 游标 + 班次去重（重启不丢、不重复消费）
+PROMPTS_DIR = AGENT_DIR / "prompts"       # 班次 prompt 外置（shift-morning/evening.md）
 
 SHIFT_PROMPTS = {
     "morning": """执行今天的早班（你是 Project X 个人助手，本条为内部班次指令）：
@@ -231,14 +232,20 @@ class Daemon:
             self._internal = False
 
     def run_shift(self, kind):
-        """内部班次（调度器或 --shift 触发）：独立于用户对话历史，宽口径免确认。"""
+        """内部班次（调度器或 --shift 触发）：独立于用户对话历史，宽口径免确认。
+        prompt 外置于 prompts/shift-<kind>.md（与 personas/skills 同哲学）。"""
+        prompt_file = PROMPTS_DIR / f"shift-{kind}.md"
+        if not prompt_file.exists():
+            self.log.log("err", err=f"班次 prompt 不存在：{prompt_file}")
+            return
         self._internal = True
         self.task = tasks_mod.TaskLine(kind=f"shift-{kind}",
                                        label="早班" if kind == "morning" else "晚班")
         self.task.push(self.tg, edit=False)
         self.log.log("shift", kind=kind, note="班次启动")
         try:
-            self._turn(self._new_conversation(SHIFT_PROMPTS[kind], use_history=False), None)
+            self._turn(self._new_conversation(prompt_file.read_text(encoding="utf-8"),
+                                              use_history=False), None)
         except Exception as e:  # noqa: BLE001 —— 班次崩溃要有尸检记录
             self.log.log("err", err=f"shift {kind}: {type(e).__name__}: {e}")
             if self.tg:
@@ -367,99 +374,6 @@ class Daemon:
         return err
 
 
-def _should_fire_shift(now, kind, done_dates):
-    """班次触发判定：kind=morning 在 08:00-08:59 / evening 在 21:00-21:59，当天未跑过即触发。"""
-    hour = 8 if kind == "morning" else 21
-    return now.hour == hour and now.strftime("%Y-%m-%d") != done_dates.get(kind)
-
-
-def _check_reminders(daemon):
-    """到期提醒即发即销（reminders 存 state.json，工具 remind_in 写入）。"""
-    rems = load_state().get("reminders") or []
-    if not rems:
-        return
-    now = time.time()
-    due = [r for r in rems if r["due"] <= now]
-    if not due:
-        return
-    for r in due:
-        daemon._say(f"⏰ 提醒：{r['text']}")
-    save_state(reminders=[r for r in rems if r["due"] > now])
-
-
-def _proactive_scan(daemon):
-    """主动扫描（每 3h、09:00-22:00）：Trending 出现高热新面孔才推送，同项不重复。"""
-    import re as _re
-    from datetime import date as _date
-    now = datetime.now()
-    if not (9 <= now.hour < 22):
-        return
-    key = now.strftime("%Y-%m-%d")
-    st = load_state()
-    if st.get("proactive_date") != key:
-        st["proactive_date"] = key
-        save_state(**st)  # 新的一天：清空"已通知"集合的效力，但不主动清（按 name+date 去重）
-    try:
-        import importlib.util as _ilu
-        src = ASSISTANT_DIR / "integrations" / "sources" / "github_trending.py"
-        spec = _ilu.spec_from_file_location("ps_trending", src)
-        mod = _ilu.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        data, _ = mod.fetch(_date.today(), since="today")
-    except Exception as e:  # noqa: BLE001 —— 扫描失败静默（它是增值不是承诺）
-        daemon.log.log("err", err=f"proactive: {e}")
-        return
-    seen = set(load_state().get("proactive_seen") or [])
-    fresh = []
-    for r in (data or [])[:5]:
-        if r["name"] not in seen and r.get("stars_today", 0) >= 3000:
-            fresh.append(r)
-            seen.add(r["name"])
-    if fresh:
-        body = "\n".join(f"· {r['name']} — +{r['stars_today']:,}/日，{r['desc'][:40]}"
-                          for r in fresh)
-        daemon._say(f"🔥 Trending 速报：出现高热新面孔\n{body}\n（被动扫描，如需深读说一声）")
-    save_state(proactive_seen=sorted(seen)[-100:])
-
-
-def _weekly_reflect(daemon):
-    """周日 22 点：记忆固化——LLM 归并当月日志与 facts 为 observations.md（hindsight 思想）。"""
-    now = datetime.now()
-    week = f"{now.isocalendar().year}-W{now.isocalendar().week}"
-    if now.weekday() != 6 or load_state().get("reflect_week") == week:
-        return
-    save_state(reflect_week=week)
-    daemon.run_reflect()
-
-
-def _scheduler_loop(tg_client, daemon, stop):
-    """内置调度器：班次（08/21）+ 提醒（即时）+ 主动扫描（每 3h）+ 周固化（周日 22 点）。"""
-    last_scan = 0
-    while not stop["flag"]:
-        try:
-            now = datetime.now()
-            done = load_state().get("shifts", {})
-            for kind in ("morning", "evening"):
-                if _should_fire_shift(now, kind, done):
-                    shifts = load_state().get("shifts", {})
-                    shifts[kind] = now.strftime("%Y-%m-%d")  # 先记账防重入
-                    save_state(shifts=shifts)
-                    daemon.log.log("shift", kind=kind, note="调度器触发")
-                    threading.Thread(target=daemon.run_shift, args=(kind,), daemon=True).start()
-            _check_reminders(daemon)
-            if time.time() - last_scan >= 3 * 3600:
-                last_scan = time.time()
-                threading.Thread(target=_proactive_scan, args=(daemon,), daemon=True).start()
-            if 22 <= now.hour < 23:
-                _weekly_reflect(daemon)
-        except Exception as e:  # noqa: BLE001 —— 调度器自身绝不死
-            try:
-                daemon.log.log("err", err=f"scheduler: {type(e).__name__}: {e}")
-            except Exception:  # noqa: BLE001
-                pass
-        stop["flag"] or time.sleep(30)
-
-
 def run(tg_client, daemon):
     """主循环：长轮询 → 白名单过滤 → 逐条处理；offset 落盘；调度器随行。SIGTERM/SIGINT 优雅退出。"""
     stop = {"flag": False}
@@ -476,7 +390,7 @@ def run(tg_client, daemon):
     saved = load_state().get("update_offset")
     if saved and getattr(tg_client, "offset", 0) < saved:
         tg_client.offset = saved
-    threading.Thread(target=_scheduler_loop, args=(tg_client, daemon, stop), daemon=True).start()
+    scheduler_mod.start(tg_client, daemon, stop)
     daemon.log.log("boot", note="daemon 启动（调度器+任务线已挂载）")
     print(f"daemon 已启动（chat={tg_client.chat_id}，model={llm.model_name()}），Ctrl-C 退出")
     fails = 0

@@ -10,6 +10,11 @@
 - **LLM**：做成可切换——OpenAI 兼容接口 + 环境变量（候选：GLM 智谱 / DeepSeek / Claude）
 - **源起**：用户嫌 OpenClaw 重 → 先用 ZCode 充当助手探索验证（2026-10-07）→ 决定固化为正式项目
 
+## 架构与决策
+
+架构分层、不变量、隐含假设、增长触发器见 [assistant/ARCHITECTURE.md](assistant/ARCHITECTURE.md)（改架构先读它）；
+重大决策的背景与取舍见 `docs/adr/`（ADR-001…006）。与本文冲突时以代码+本文为准并修订文档。
+
 ## 蓝图
 
 - **v0（✅ 已完成 2026-10-07）**：确定性脚本——早报/晚间简报（抓取 → 渲染 markdown → 写 `assistant/reports/`），launchd/cron 驱动，接管下述自动化

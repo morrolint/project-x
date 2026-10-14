@@ -285,6 +285,7 @@ def activity_recent(days=1):
     if not LOGS_DIR.exists():
         return "暂无活动日志。"
     lines_out, turns, tools_n, tokens, errs, states = [], 0, 0, 0, 0, {}
+    per_day = {}
     until = _dt.now().date() + _td.timedelta(1)
     since = _dt.now().date() - _td.timedelta(int(days) - 1)
     d = since
@@ -303,7 +304,10 @@ def activity_recent(days=1):
                 elif dr == "tool":
                     tools_n += 1
                 elif dr == "llm":
-                    tokens += (r.get("usage") or {}).get("total_tokens", 0)
+                    n = (r.get("usage") or {}).get("total_tokens", 0)
+                    tokens += n
+                    day = r["ts"][:10]
+                    per_day[day] = per_day.get(day, 0) + n
                 elif dr in ("llm_err", "err", "send_err"):
                     errs += 1
                 elif dr == "task":
@@ -313,7 +317,8 @@ def activity_recent(days=1):
         return f"近 {days} 天无活动。"
     head = (f"近 {days} 天活动：{turns} 轮对话 / {tools_n} 次工具 / {tokens:,} tokens / {errs} 个错误"
             + (f" / 任务态 {states}" if states else ""))
-    return head + "\n" + "\n".join(lines_out[-15:])
+    daily = "\n".join(f"· {d}: {t:,} tokens" for d, t in sorted(per_day.items())) if per_day else ""
+    return head + (("\n" + daily) if daily else "") + "\n" + "\n".join(lines_out[-15:])
 
 
 def remind_in(minutes, text):
@@ -425,24 +430,34 @@ def parse_call(call):
     return fn.get("name", ""), (args if isinstance(args, dict) else {})
 
 
-# 确认门分级：这些路径是机器产物区/班次操作区，写它们免确认（对话轮次窄口径）
-_AUTO_PATHS_CHAT = ("reports/",)
-# 班次/内勤轮次的宽口径：技能、提案、registry、收件箱也是自动化合法工作区
-_AUTO_PATHS_WIDE = _AUTO_PATHS_CHAT + ("skills/", "integrations/proposals/",
-                                       "integrations/registry.json", "TASKS.md", "memory/")
+_GATE_RULES_FILE = AGENT_DIR / "gate_rules.json"
+_GATE_DEFAULTS = {"auto_paths_chat": ["reports/"],
+                  "auto_paths_wide": ["reports/", "skills/", "integrations/proposals/",
+                                      "integrations/registry.json", "TASKS.md", "memory/"]}
+
+
+def _gate_paths(wide):
+    """确认门分级策略（数据化于 gate_rules.json，ADR-003；文件缺失回退内置默认）。"""
+    rules = _GATE_DEFAULTS
+    try:
+        loaded = json.loads(_GATE_RULES_FILE.read_text(encoding="utf-8"))
+        rules = {"auto_paths_chat": loaded.get("auto_paths_chat", _GATE_DEFAULTS["auto_paths_chat"]),
+                 "auto_paths_wide": loaded.get("auto_paths_wide", _GATE_DEFAULTS["auto_paths_wide"])}
+    except (OSError, ValueError):
+        pass
+    return rules["auto_paths_wide" if wide else "auto_paths_chat"]
 
 
 def auto_approve(name, args, wide=False):
-    """确认门分级：命中免确认路径区的写操作返回 True（详见 Alex 进度面板方案 / Dots Custom Rules）。
-    wide=True 为班次/内勤上下文（技能/提案/registry 也免确认）。"""
+    """确认门分级：命中免确认路径区的写操作返回 True（策略见 gate_rules.json）。
+    wide=True 为班次/内勤上下文。docs/ 与密钥在 _safe_path 层永拦，不依赖本策略。"""
     if name != "write_file":
         return False
     p, err = _safe_path(args.get("path", ""), for_write=True)
     if err:
         return False
     rel = str(p.relative_to(ASSISTANT_DIR.resolve()))
-    rules = _AUTO_PATHS_WIDE if wide else _AUTO_PATHS_CHAT
-    return any(rel == r.rstrip("/") or rel.startswith(r) for r in rules)
+    return any(rel == r.rstrip("/") or rel.startswith(r) for r in _gate_paths(wide))
 
 
 def is_confirm(name):

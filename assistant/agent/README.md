@@ -51,7 +51,7 @@ python3 assistant/agent/daemon.py --once "在吗"    # 单条消息调试
   TASKS.md，daemon 与它是**并存的两个入口**；daemon 稳定后再讨论是否接管 8/21 定时任务。
 - 集成纪律不变：新工具加进 `tools.py` 属于架构内扩展；接第三方工具/服务仍走
   `integrations/proposals/` 提案。
-- 日志 `logs/YYYY-MM-DD.jsonl` 已记录 LLM usage 与思考过程（reasoning 单列事件，不回传 API），第二批做成本记账与回放（HANDOFF §六）。
+- 日志 `logs/YYYY-MM-DD.jsonl`（事件枚举见 assistant/ARCHITECTURE.md） 已记录 LLM usage 与思考过程（reasoning 单列事件，不回传 API），第二批做成本记账与回放（HANDOFF §六）。
 
 ## 第二批（按 HANDOFF §六，未做）
 

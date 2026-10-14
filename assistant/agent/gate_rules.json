@@ -1,0 +1,5 @@
+{
+  "_doc": "确认门分级策略（ADR-003）。auto_paths_chat：用户对话轮次免确认写区；auto_paths_wide：班次/内勤额外放行区。相对 assistant/。docs/ 与密钥文件在路径守卫层永拦，不在此表。",
+  "auto_paths_chat": ["reports/"],
+  "auto_paths_wide": ["reports/", "skills/", "integrations/proposals/", "integrations/registry.json", "TASKS.md", "memory/"]
+}

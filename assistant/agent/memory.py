@@ -17,7 +17,7 @@ MEMORY_DIR = Path(__file__).resolve().parent.parent / "memory"
 
 BM25_K1 = 1.5
 BM25_B = 0.75
-MIN_SCORE = 0.8  # 低于此分的召回视为噪音丢弃
+MIN_SCORE_ABS = 0.15  # 绝对下限（防零分混入）；再叠加相对阈值 = 25% × 最高分（适配语料规模）
 
 # Memory Defense 基础版：常见凭据形态（打码优先于拦截——保留记忆价值，去掉敏感本体）
 _SECRET_RULES = [
@@ -122,7 +122,10 @@ def recall(query, top=5):
             tf = 1  # 词元集合无重复；命中即 1
             idf = math.log(1 + (n - df[w] + 0.5) / (df[w] + 0.5))
             score += idf * tf * (BM25_K1 + 1) / (tf + BM25_K1 * (1 - BM25_B + BM25_B * dl / avgdl))
-        if score >= MIN_SCORE:
-            scored.append((score, idx))
+        scored.append((score, idx))
     scored.sort(reverse=True)
-    return [f"{docs[i][0]}#L{docs[i][1]} {docs[i][2]}" for _, i in scored[:top]]
+    if not scored:
+        return []
+    cutoff = max(MIN_SCORE_ABS, 0.25 * scored[0][0])  # 相对阈值：与最相关结果差距过大的丢弃
+    return [f"{docs[i][0]}#L{docs[i][1]} {docs[i][2]}"
+            for sc, i in scored[:top] if sc >= cutoff]
