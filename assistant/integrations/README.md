@@ -19,6 +19,7 @@
 | `skill` | `../skills/<name>/SKILL.md` | 纯方法文档：frontmatter(name/description) + 步骤；**不含可执行代码** | ✅ 3 个技能已上线 |
 | `capability` | 外部工具/服务（如 Agent-Reach、PageIndex） | 必须经提案批准后安装，安装方式与回滚步骤写进提案 | 📋 若干提案中 |
 | `channel-inbound` | `../agent/channels/*.py` 插件，daemon 按 `AGENT_CHANNEL` 选择 | 见下节 | 🚧 Telegram 开发中 |
+| `ui-kit` | `../web/kit/`（设计令牌+HUD 组件+动效脚本+SVG 资产，零依赖无构建） | 页面引用；改主色只动 `:root` 令牌 | ✅ 巨构套件 |
 | `persona` | `../agent/personas/*.md` | frontmatter(name/vibe) + 身份/铁律/交付标准；daemon 按任务匹配注入或 `AGENT_PERSONA` 强制 | ✅ PM 首个人设 |
 | `memory` | `../agent/memory.py` | `retain / recall` 已实现（reflect 属第二批）；markdown 按月归档 + 词元召回 | ✅ v0.1（随 v1 daemon 上线） |
 

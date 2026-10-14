@@ -162,6 +162,15 @@
       "repo": "Tencent/WeKnora",
       "provenance": "2026-10-14 月榜探索（用户授权自主调研）：腾讯开源本地知识库平台（RAG+Agent+Wiki，Docker 自托管，国内直连），v2 文档检索候选",
       "note": "提案见 proposals/2026-10-14-cap-weknora.md；与 cap-pageindex 并案二选一（服务器形态选 WeKnora / 单进程形态选 PageIndex）"
+    },
+    {
+      "id": "ui-kit-megastructure",
+      "type": "ui-kit",
+      "impl": "../web/kit/",
+      "status": "active",
+      "added": "2026-10-14",
+      "provenance": "源自用户自有项目 ~/Projects/arcology（巨构个人站）；2026-10-14 用户指令移入（'你才是本体'）作桌面助手 UI 底座：css 设计令牌+HUD 组件 / js 行为件 / skyline.svg",
+      "note": "零依赖无构建；后续桌面控制台（webui）基于此套件渲染"
     }
   ]
 }

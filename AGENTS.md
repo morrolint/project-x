@@ -25,6 +25,7 @@ assistant/
 ├── scripts/        report.py（报告生成；推送通道 = integrations/channels/ 插件，动态发现）
 ├── agent/          v1 常驻 agent（入站通道插件化 agent/channels/ + tool-use 循环 + 确认门；见其 README）
 ├── memory/         agent 长期记忆（markdown 按月归档，agent 运行时生成）
+├── web/            巨构套件（ui-kit-megastructure：桌面助手 UI 底座，零依赖）+ 将来的控制台页面
 ├── integrations/   集成子系统：README.md（契约铁律）/ registry.json（唯一事实来源）/ check_registry.py（校验器）/ sources/（数据源插件）/ channels/（推送插件）/ proposals/（接入提案）
 ├── skills/         agent 技能库（纯方法 markdown，不含可执行代码）
 ├── research/       调研档案（外部项目"抄作业清单"、吸收笔记；供后续会话与自动化查阅，不是集成）

@@ -25,7 +25,7 @@ REGISTRY = HERE / "registry.json"
 SOURCES_DIR = HERE / "sources"
 CHANNELS_DIR = HERE / "channels"
 
-TYPES = {"report-source", "push-channel", "skill", "capability", "channel-inbound", "memory", "persona"}
+TYPES = {"report-source", "push-channel", "skill", "capability", "channel-inbound", "memory", "persona", "ui-kit"}
 STATUS = {"proposed", "evaluating", "active", "rejected", "retired"}
 
 errors = []
