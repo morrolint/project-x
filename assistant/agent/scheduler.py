@@ -45,8 +45,11 @@ def _proactive_scan(daemon):
         st["proactive_date"] = now.strftime("%Y-%m-%d")
         save_state(**st)
     try:
+        import sys
         from pathlib import Path
         src = Path(__file__).resolve().parent.parent / "integrations" / "sources" / "github_trending.py"
+        if str(src.parent) not in sys.path:  # 插件依赖同目录 _common（与 tools.trending_top 同款处理）
+            sys.path.insert(0, str(src.parent))
         spec = importlib.util.spec_from_file_location("ps_trending", src)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
