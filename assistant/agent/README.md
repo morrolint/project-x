@@ -5,7 +5,7 @@ ZCode 之后的自建 agent 运行时：一个 launchd 托管的常驻 Python �
 全部 HTTP 走 curl 子进程（LibreSSL 与本地代理的 TLS 兼容问题，见 AGENTS.md）。
 
 ```
-daemon.py        入口：轮询主循环、通道插件发现、确认门（分级）、任务线进度、内置调度器（08:00/21:00 班次接管）、--check / --once / --shift
+daemon.py        入口：轮询主循环、通道插件发现、确认门（分级）、任务线进度、内置调度器（08:00/21:00 班次 + 到期提醒 + 每 3h 主动扫描 + 周日 22 点记忆固化）、--check / --once / --shift
 tasks.py         任务线：五态状态机（RUNNING/WAITING_USER/DONE/FAILED/CANCELED），tasks/<id>.json 唯一事实源，重启恢复（治挂起丢失/重复投递）
 channels/        入站通道插件（telegram.py；飞书=新增插件+registry 行+AGENT_CHANNEL 切换）
 personas/        人设库（pm.md 产品经理；AGENT_PERSONA=pm 强制切换，或模型按任务自选）

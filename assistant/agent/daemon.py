@@ -36,6 +36,7 @@ if str(AGENT_DIR) not in sys.path:
     sys.path.insert(0, str(AGENT_DIR))
 
 import _http  # noqa: E402
+from daemon_state import STATE_FILE, load_state, save_state  # noqa: E402
 import llm  # noqa: E402
 import memory  # noqa: E402
 import tasks as tasks_mod  # noqa: E402
@@ -147,22 +148,6 @@ def skills_index():
     return "\n".join(items)
 
 
-def load_state():
-    try:
-        return json.loads(STATE_FILE.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-
-
-def save_state(**kv):
-    st = load_state()
-    st.update(kv)
-    try:
-        STATE_FILE.write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
-    except OSError:
-        pass
-
-
 class Logger:
     def __init__(self):
         LOGS_DIR.mkdir(parents=True, exist_ok=True)
@@ -228,6 +213,23 @@ class Daemon:
             return self._turn(msgs, reply_to)
         return self._turn(self._new_conversation(text), reply_to)
 
+    def run_reflect(self):
+        """记忆固化（周日）：LLM 归并月度日志+facts → memory/observations.md（带证据计数）。"""
+        self._internal = True
+        self.task = tasks_mod.TaskLine(kind="reflect", label="记忆固化")
+        self.task.push(self.tg, edit=False)
+        self.log.log("shift", kind="reflect", note="记忆固化启动")
+        try:
+            prompt = ("整理长期记忆（内部维护任务）：read_file 读 assistant/memory/ 下当月与上月日志及 facts.md，"
+                      "把重复/相关条目归并为'观察'——每条带出现次数（证据计数）与时间范围，"
+                      "写成 assistant/memory/observations.md（write_file，标题注明生成时间）；"
+                      "只归并不改原始日志；过时条目标注'已过时'不删除。中文，完成后一句话汇报即可。")
+            self._turn(self._new_conversation(prompt, use_history=False), None)
+        except Exception as e:  # noqa: BLE001
+            self.log.log("err", err=f"reflect: {type(e).__name__}: {e}")
+        finally:
+            self._internal = False
+
     def run_shift(self, kind):
         """内部班次（调度器或 --shift 触发）：独立于用户对话历史，宽口径免确认。"""
         self._internal = True
@@ -276,10 +278,14 @@ class Daemon:
         return msgs
 
     def _heartbeat_loop(self):
-        """长任务期间的"正在输入"心跳（约 5 秒过期，4.5 秒续一次）。"""
+        """长任务期间：typing 心跳（4.5s 续）+ 任务线进度保活（约 75s 重刷）。"""
+        beats = 0
         while not self._hb_stop.wait(4.5):
             if self.tg is not None and hasattr(self.tg, "typing"):
                 self.tg.typing()
+            beats += 1
+            if beats % 17 == 0 and self.task and self.task.state == "RUNNING":
+                self.task.push(self.tg)
 
     def _turn(self, msgs, reply_to):
         self._hb_stop = threading.Event()
@@ -335,15 +341,20 @@ class Daemon:
                     self.task.push(self.tg)
                 lines = [f"• {c['name']}：{tools_mod.preview(c['name'], c['args'])}"
                          for c in need_confirm]
-                return self._say("⚠️ 需要你确认：\n" + "\n".join(lines) +
-                                 "\n\n回复「确认」执行；回复其他内容则取消该操作并按新指令处理。",
-                                 reply_to)
+                confirm_text = ("⚠️ 需要你确认：\n" + "\n".join(lines) +
+                                "\n\n点下方按钮，或回复「确认」；其他内容视为取消并按新指令处理。")
+                if self.tg is not None and hasattr(self.tg, "send_confirm"):
+                    err, _mid = self.tg.send_confirm(confirm_text)
+                    if err:
+                        return self._say(confirm_text, reply_to)
+                    return None
+                return self._say(confirm_text, reply_to)
         if self.task:
             self.task.finish("FAILED", "工具循环轮次用尽")
             self.task.push(self.tg)
         return self._say("⚠️ 工具循环轮次用尽，先回复到这里；需要细节可以再问我。", reply_to)
 
-    def _say(self, text, reply_to, assistant_out=None):
+    def _say(self, text, reply_to=None, assistant_out=None):
         if assistant_out is not None:
             self.history.append({"role": "assistant", "content": assistant_out})
         self.log.log("out", text=text[:500])
@@ -362,8 +373,68 @@ def _should_fire_shift(now, kind, done_dates):
     return now.hour == hour and now.strftime("%Y-%m-%d") != done_dates.get(kind)
 
 
+def _check_reminders(daemon):
+    """到期提醒即发即销（reminders 存 state.json，工具 remind_in 写入）。"""
+    rems = load_state().get("reminders") or []
+    if not rems:
+        return
+    now = time.time()
+    due = [r for r in rems if r["due"] <= now]
+    if not due:
+        return
+    for r in due:
+        daemon._say(f"⏰ 提醒：{r['text']}")
+    save_state(reminders=[r for r in rems if r["due"] > now])
+
+
+def _proactive_scan(daemon):
+    """主动扫描（每 3h、09:00-22:00）：Trending 出现高热新面孔才推送，同项不重复。"""
+    import re as _re
+    from datetime import date as _date
+    now = datetime.now()
+    if not (9 <= now.hour < 22):
+        return
+    key = now.strftime("%Y-%m-%d")
+    st = load_state()
+    if st.get("proactive_date") != key:
+        st["proactive_date"] = key
+        save_state(**st)  # 新的一天：清空"已通知"集合的效力，但不主动清（按 name+date 去重）
+    try:
+        import importlib.util as _ilu
+        src = ASSISTANT_DIR / "integrations" / "sources" / "github_trending.py"
+        spec = _ilu.spec_from_file_location("ps_trending", src)
+        mod = _ilu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        data, _ = mod.fetch(_date.today(), since="today")
+    except Exception as e:  # noqa: BLE001 —— 扫描失败静默（它是增值不是承诺）
+        daemon.log.log("err", err=f"proactive: {e}")
+        return
+    seen = set(load_state().get("proactive_seen") or [])
+    fresh = []
+    for r in (data or [])[:5]:
+        if r["name"] not in seen and r.get("stars_today", 0) >= 3000:
+            fresh.append(r)
+            seen.add(r["name"])
+    if fresh:
+        body = "\n".join(f"· {r['name']} — +{r['stars_today']:,}/日，{r['desc'][:40]}"
+                          for r in fresh)
+        daemon._say(f"🔥 Trending 速报：出现高热新面孔\n{body}\n（被动扫描，如需深读说一声）")
+    save_state(proactive_seen=sorted(seen)[-100:])
+
+
+def _weekly_reflect(daemon):
+    """周日 22 点：记忆固化——LLM 归并当月日志与 facts 为 observations.md（hindsight 思想）。"""
+    now = datetime.now()
+    week = f"{now.isocalendar().year}-W{now.isocalendar().week}"
+    if now.weekday() != 6 or load_state().get("reflect_week") == week:
+        return
+    save_state(reflect_week=week)
+    daemon.run_reflect()
+
+
 def _scheduler_loop(tg_client, daemon, stop):
-    """内置调度器（daemon 接管早晚班的地基）：每 30s 检查，到点起班次线程。"""
+    """内置调度器：班次（08/21）+ 提醒（即时）+ 主动扫描（每 3h）+ 周固化（周日 22 点）。"""
+    last_scan = 0
     while not stop["flag"]:
         try:
             now = datetime.now()
@@ -375,6 +446,12 @@ def _scheduler_loop(tg_client, daemon, stop):
                     save_state(shifts=shifts)
                     daemon.log.log("shift", kind=kind, note="调度器触发")
                     threading.Thread(target=daemon.run_shift, args=(kind,), daemon=True).start()
+            _check_reminders(daemon)
+            if time.time() - last_scan >= 3 * 3600:
+                last_scan = time.time()
+                threading.Thread(target=_proactive_scan, args=(daemon,), daemon=True).start()
+            if 22 <= now.hour < 23:
+                _weekly_reflect(daemon)
         except Exception as e:  # noqa: BLE001 —— 调度器自身绝不死
             try:
                 daemon.log.log("err", err=f"scheduler: {type(e).__name__}: {e}")
@@ -419,6 +496,18 @@ def run(tg_client, daemon):
         if updates:
             save_state(update_offset=tg_client.offset)  # 消费即落盘
         for u in updates:
+            cb = u.get("callback_query") or {}
+            if cb:  # 内联按钮回调：等价于发送对应指令文本
+                cmd = {"confirm:yes": "确认", "confirm:no": "取消本次操作"}.get(
+                    cb.get("data", ""), "")
+                if cmd:
+                    daemon.log.log("in", text=f"[按钮]{cmd}")
+                    try:
+                        tg_client.answer_callback(cb.get("id"))
+                        daemon.handle_text(cmd)
+                    except Exception as e:  # noqa: BLE001
+                        daemon.log.log("err", err=f"callback: {e}")
+                continue
             msg = u.get("message") or {}
             chat_id = str((msg.get("chat") or {}).get("id", ""))
             if chat_id != tg_client.chat_id:

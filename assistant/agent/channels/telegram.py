@@ -58,7 +58,7 @@ class Telegram:
         """长轮询取新消息。返回 (updates, err)。"""
         result, err = self.api("getUpdates", curl_timeout=timeout_s + 15,
                                timeout=timeout_s, offset=self.offset,
-                               allowed_updates=["message"])
+                               allowed_updates=["message", "callback_query"])
         if err:
             return [], err
         for u in result or []:
@@ -82,6 +82,21 @@ class Telegram:
             if result:
                 last_id = result.get("message_id", last_id)
         return err, last_id
+
+    def send_confirm(self, text, yes="✅ 确认", no="🚫 取消"):
+        """发送带内联按钮的确认消息。返回 (错误|None, message_id|None)。"""
+        result, err = self.api(
+            "sendMessage", curl_timeout=30, text=str(text)[:3800],
+            chat_id=self.chat_id, disable_web_page_preview=True,
+            reply_markup={"inline_keyboard": [[
+                {"text": yes, "callback_data": "confirm:yes"},
+                {"text": no, "callback_data": "confirm:no"}]]})
+        return err, (result or {}).get("message_id")
+
+    def answer_callback(self, callback_id, text=""):
+        """应答回调（消掉客户端转圈）。"""
+        self.api("answerCallbackQuery", curl_timeout=10,
+                 callback_query_id=str(callback_id), text=text[:180])
 
     def edit_message(self, msg_id, text):
         """编辑自己发的消息（进度面板原地刷新）。返回 (ok, 错误|None)。"""

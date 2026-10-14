@@ -1,4 +1,4 @@
-"""agent 工具集（v1 最小闭环 12 个）：收件箱 / 报告 / 文件与目录 / 活动 / 记忆。
+"""agent 工具集（v1 最小闭环 13 个）：收件箱 / 报告 / 文件与目录 / 活动 / 记忆。
 
 契约对齐 assistant/integrations/README.md：
 - 新增工具 = 本文件加一个 Tool 条目，schemas() 自动带给 LLM；
@@ -316,6 +316,24 @@ def activity_recent(days=1):
     return head + "\n" + "\n".join(lines_out[-15:])
 
 
+def remind_in(minutes, text):
+    """设一个相对提醒（分钟后的推送提醒）。调度器到期经 Telegram 推送。"""
+    import time as _time
+    try:
+        m = int(minutes)
+    except (TypeError, ValueError):
+        return "minutes 需是整数。"
+    if m <= 0 or m > 60 * 24 * 30:
+        return "分钟数需在 1 分钟到 30 天之间。"
+    import json as _json
+    from daemon_state import load_state, save_state  # 薄封装，避免循环 import
+    rems = load_state().get("reminders") or []
+    rems.append({"due": _time.time() + m * 60, "text": str(text)[:200]})
+    save_state(reminders=rems)
+    from datetime import datetime as _dt
+    return f"已设提醒：{_dt.now() + __import__('datetime').timedelta(minutes=m):%m-%d %H:%M} —— {text[:60]}"
+
+
 def memory_save(text):
     from memory import retain
     return f"已写入记忆（{retain(str(text))}）：{str(text)[:80]}"
@@ -371,6 +389,10 @@ TOOLS = [
     Tool("memory_save", "往长期记忆写一条（用户偏好、项目进展、约定、教训）",
          {"text": {"type": "string", "description": "一句话记忆"}},
          ["text"], memory_save),
+    Tool("remind_in", "设提醒：N 分钟后经 Telegram 推送一条提醒文本",
+         {"minutes": {"type": "integer", "description": "多少分钟后提醒"},
+          "text": {"type": "string", "description": "提醒内容"}},
+         ["minutes", "text"], remind_in),
     Tool("activity", "查看助手最近的活动日志（干了什么/花了多少 token/有无错误）",
          {"days": {"type": "integer", "description": "回看天数，默认 1"}},
          [], activity_recent),
@@ -407,7 +429,7 @@ def parse_call(call):
 _AUTO_PATHS_CHAT = ("reports/",)
 # 班次/内勤轮次的宽口径：技能、提案、registry、收件箱也是自动化合法工作区
 _AUTO_PATHS_WIDE = _AUTO_PATHS_CHAT + ("skills/", "integrations/proposals/",
-                                       "integrations/registry.json", "TASKS.md")
+                                       "integrations/registry.json", "TASKS.md", "memory/")
 
 
 def auto_approve(name, args, wide=False):
