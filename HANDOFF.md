@@ -16,7 +16,7 @@ Python，Mac 本地，用户中文交流、偏轻量方案。开发策略是**�
 
 | 组件 | 状态 | 位置 |
 |---|---|---|
-| 两班倒自动化 | ✅ 每天 08:00 早报 / 21:00 晚间简报（**2026-10-10 迁至本机**，另一台 mini 随退役停摆） | 本机 ZCode workspace 的 automation（cron `0 8,21 * * *`，prompt 内按小时分支；原实例 `automation-30c63702…` 已废弃） |
+| 定时班次 | ✅ 每天 08:00 早报 / 21:00 晚间简报，**2026-10-14 起由 daemon 内置调度器执行**（ADR-004；ZCode 自动化层八连杀退役，本机 cron automation-f848c58a… 已删） | `agent/scheduler.py`（班次/提醒/主动扫描/周固化四职责）；`--shift` 可手动触发同流程 |
 | 报告脚本 v0 | ✅ 纯标准库 + 系统 curl，数据源插件化 | `assistant/scripts/report.py`（`morning`/`evening`，`--date/--output-dir/--force`，幂等） |
 | 数据源插件 ×3 | ✅ 60秒读懂世界 / GitHub Trending / 微博热搜官方接口 | `assistant/integrations/sources/`（report.py 动态发现，新增源零改动） |
 | Trending sidecar | ✅ `reports/YYYY-MM-DD-trending.json`，晚间对比读 morning 键 | 呈现层（早报逐项目解读）与数据层解耦 |
