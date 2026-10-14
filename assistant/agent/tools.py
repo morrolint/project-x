@@ -1,4 +1,4 @@
-"""agent 工具集（v1 最小闭环 11 个）：收件箱 / 报告 / 文件与目录 / 记忆。
+"""agent 工具集（v1 最小闭环 12 个）：收件箱 / 报告 / 文件与目录 / 活动 / 记忆。
 
 契约对齐 assistant/integrations/README.md：
 - 新增工具 = 本文件加一个 Tool 条目，schemas() 自动带给 LLM；
@@ -16,8 +16,9 @@ AGENT_DIR = Path(__file__).resolve().parent
 ASSISTANT_DIR = AGENT_DIR.parent
 TASKS_FILE = ASSISTANT_DIR / "TASKS.md"
 REPORT_PY = ASSISTANT_DIR / "scripts" / "report.py"
+LOGS_DIR = AGENT_DIR / "logs"
 
-READ_CAP = 8000       # read_file 单次最大字符
+READ_CAP = 16000      # read_file 单次最大字符（2026-10-14 调大：报告增强需整读增强后的报告）
 RESULT_CAP = 4000     # 工具结果回传 LLM 的最大字符
 
 
@@ -141,6 +142,8 @@ def run_report(kind="morning", force=False):
     """调 scripts/report.py 生成报告；推送 Telegram 由脚本自身完成。"""
     if kind not in ("morning", "evening"):
         return "kind 只能是 morning 或 evening。"
+    if CHANNEL is not None and hasattr(CHANNEL, "send"):
+        CHANNEL.send(f"⏳ 正在生成{'早报' if kind == 'morning' else '晚间简报'}，通常需要 1-2 分钟…")
     cmd = [sys.executable, str(REPORT_PY), kind] + (["--force"] if force else [])
     try:
         r = subprocess.run(cmd, capture_output=True, timeout=420)
@@ -275,6 +278,44 @@ def write_file(path, content=""):
     return f"已写入 {p}（{'覆盖' if existed else '新建'}，{len(content)} 字符）"
 
 
+def activity_recent(days=1):
+    """汇总最近 N 天 daemon 活动日志（对话轮次/工具调用/token/错误/任务态）。"""
+    import json as _json
+    from datetime import datetime as _dt, timedelta as _td
+    if not LOGS_DIR.exists():
+        return "暂无活动日志。"
+    lines_out, turns, tools_n, tokens, errs, states = [], 0, 0, 0, 0, {}
+    until = _dt.now().date() + _td.timedelta(1)
+    since = _dt.now().date() - _td.timedelta(int(days) - 1)
+    d = since
+    while d < until:
+        f = LOGS_DIR / f"{d:%Y-%m-%d}.jsonl"
+        if f.exists():
+            for line in f.read_text(encoding="utf-8").splitlines():
+                try:
+                    r = _json.loads(line)
+                except ValueError:
+                    continue
+                dr = r.get("dir")
+                if dr == "in":
+                    turns += 1
+                    lines_out.append(f"{r['ts'][11:16]} ▶ {str(r.get('text',''))[:40]}")
+                elif dr == "tool":
+                    tools_n += 1
+                elif dr == "llm":
+                    tokens += (r.get("usage") or {}).get("total_tokens", 0)
+                elif dr in ("llm_err", "err", "send_err"):
+                    errs += 1
+                elif dr == "task":
+                    states[r.get("state", "?")] = states.get(r.get("state", "?"), 0) + 1
+        d += _td.timedelta(1)
+    if not lines_out:
+        return f"近 {days} 天无活动。"
+    head = (f"近 {days} 天活动：{turns} 轮对话 / {tools_n} 次工具 / {tokens:,} tokens / {errs} 个错误"
+            + (f" / 任务态 {states}" if states else ""))
+    return head + "\n" + "\n".join(lines_out[-15:])
+
+
 def memory_save(text):
     from memory import retain
     return f"已写入记忆（{retain(str(text))}）：{str(text)[:80]}"
@@ -330,6 +371,9 @@ TOOLS = [
     Tool("memory_save", "往长期记忆写一条（用户偏好、项目进展、约定、教训）",
          {"text": {"type": "string", "description": "一句话记忆"}},
          ["text"], memory_save),
+    Tool("activity", "查看助手最近的活动日志（干了什么/花了多少 token/有无错误）",
+         {"days": {"type": "integer", "description": "回看天数，默认 1"}},
+         [], activity_recent),
     Tool("memory_search", "按关键词检索长期记忆",
          {"query": {"type": "string"}},
          ["query"], memory_search),
@@ -357,6 +401,26 @@ def parse_call(call):
     except ValueError:
         args = {}
     return fn.get("name", ""), (args if isinstance(args, dict) else {})
+
+
+# 确认门分级：这些路径是机器产物区/班次操作区，写它们免确认（对话轮次窄口径）
+_AUTO_PATHS_CHAT = ("reports/",)
+# 班次/内勤轮次的宽口径：技能、提案、registry、收件箱也是自动化合法工作区
+_AUTO_PATHS_WIDE = _AUTO_PATHS_CHAT + ("skills/", "integrations/proposals/",
+                                       "integrations/registry.json", "TASKS.md")
+
+
+def auto_approve(name, args, wide=False):
+    """确认门分级：命中免确认路径区的写操作返回 True（详见 Alex 进度面板方案 / Dots Custom Rules）。
+    wide=True 为班次/内勤上下文（技能/提案/registry 也免确认）。"""
+    if name != "write_file":
+        return False
+    p, err = _safe_path(args.get("path", ""), for_write=True)
+    if err:
+        return False
+    rel = str(p.relative_to(ASSISTANT_DIR.resolve()))
+    rules = _AUTO_PATHS_WIDE if wide else _AUTO_PATHS_CHAT
+    return any(rel == r.rstrip("/") or rel.startswith(r) for r in rules)
 
 
 def is_confirm(name):

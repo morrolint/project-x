@@ -1,0 +1,156 @@
+{
+ "morning": {
+  "fetched_at": "2026-10-11T08:08:59",
+  "repos": [
+   {
+    "name": "morluto/rea",
+    "url": "https://github.com/morluto/rea",
+    "desc": "Reverse engineer anything with agents, from app behavior dow…",
+    "lang": "TypeScript",
+    "stars_total": 72040,
+    "stars_today": 25793
+   },
+   {
+    "name": "boykopovar/AnyPS5",
+    "url": "https://github.com/boykopovar/AnyPS5",
+    "desc": "Tool for automatic PS5 executables porting to Linux and Wind…",
+    "lang": "C++",
+    "stars_total": 26783,
+    "stars_today": 5805
+   },
+   {
+    "name": "storytold/artcraft",
+    "url": "https://github.com/storytold/artcraft",
+    "desc": "ArtCraft is an intentional crafting engine for artists, desi…",
+    "lang": "Rust",
+    "stars_total": 14445,
+    "stars_today": 3222
+   },
+   {
+    "name": "mattpocock/skills",
+    "url": "https://github.com/mattpocock/skills",
+    "desc": "Skills for Real Engineers. Straight from my .agents director…",
+    "lang": "Shell",
+    "stars_total": 284466,
+    "stars_today": 1736
+   },
+   {
+    "name": "cathrynlavery/diagram-design",
+    "url": "https://github.com/cathrynlavery/diagram-design",
+    "desc": "Editorial diagram design for Claude Code, Codex, GitHub Copi…",
+    "lang": "HTML",
+    "stars_total": 48929,
+    "stars_today": 1190
+   },
+   {
+    "name": "anthropics/knowledge-work-plugins",
+    "url": "https://github.com/anthropics/knowledge-work-plugins",
+    "desc": "Open source repository of plugins primarily intended for kno…",
+    "lang": "Python",
+    "stars_total": 28814,
+    "stars_today": 625
+   },
+   {
+    "name": "hugohe3/ppt-master",
+    "url": "https://github.com/hugohe3/ppt-master",
+    "desc": "AI turns documents or topics into real, native PowerPoint de…",
+    "lang": "Python",
+    "stars_total": 59424,
+    "stars_today": 461
+   },
+   {
+    "name": "multica-ai/andrej-karpathy-skills",
+    "url": "https://github.com/multica-ai/andrej-karpathy-skills",
+    "desc": "A single CLAUDE.md file to improve Claude Code behavior, der…",
+    "lang": "—",
+    "stars_total": 218259,
+    "stars_today": 278
+   },
+   {
+    "name": "mksglu/context-mode",
+    "url": "https://github.com/mksglu/context-mode",
+    "desc": "Context window optimization for AI coding agents. Sandboxes…",
+    "lang": "TypeScript",
+    "stars_total": 26307,
+    "stars_today": 178
+   },
+   {
+    "name": "huggingface/transformers",
+    "url": "https://github.com/huggingface/transformers",
+    "desc": "🤗 Transformers: the model-definition framework for state-of-…",
+    "lang": "Python",
+    "stars_total": 167246,
+    "stars_today": 96
+   }
+  ]
+ },
+ "evening": {
+  "fetched_at": "2026-10-11T21:09:58",
+  "repos": [
+   {
+    "name": "morluto/rea",
+    "url": "https://github.com/morluto/rea",
+    "desc": "Reverse engineer anything with agents, from app behavior dow…",
+    "lang": "TypeScript",
+    "stars_total": 87958,
+    "stars_today": 25585
+   },
+   {
+    "name": "boykopovar/AnyPS5",
+    "url": "https://github.com/boykopovar/AnyPS5",
+    "desc": "Tool for automatic PS5 executables porting to Linux and Wind…",
+    "lang": "C++",
+    "stars_total": 28460,
+    "stars_today": 3977
+   },
+   {
+    "name": "storytold/artcraft",
+    "url": "https://github.com/storytold/artcraft",
+    "desc": "ArtCraft is an intentional crafting engine for artists, desi…",
+    "lang": "Rust",
+    "stars_total": 16033,
+    "stars_today": 2956
+   },
+   {
+    "name": "cathrynlavery/diagram-design",
+    "url": "https://github.com/cathrynlavery/diagram-design",
+    "desc": "Editorial diagram design for Claude Code, Codex, GitHub Copi…",
+    "lang": "HTML",
+    "stars_total": 49628,
+    "stars_today": 1083
+   },
+   {
+    "name": "bilawalsidhu/gods-eye-view",
+    "url": "https://github.com/bilawalsidhu/gods-eye-view",
+    "desc": "A spy satellite simulator in your browser, except the data i…",
+    "lang": "JavaScript",
+    "stars_total": 50825,
+    "stars_today": 872
+   },
+   {
+    "name": "lyogavin/airllm",
+    "url": "https://github.com/lyogavin/airllm",
+    "desc": "AirLLM 70B inference with single 4GB GPU",
+    "lang": "Jupyter Notebook",
+    "stars_total": 36140,
+    "stars_today": 541
+   },
+   {
+    "name": "chrislgarry/Apollo-11",
+    "url": "https://github.com/chrislgarry/Apollo-11",
+    "desc": "Original Apollo 11 Guidance Computer (AGC) source code for t…",
+    "lang": "Assembly",
+    "stars_total": 73910,
+    "stars_today": 496
+   },
+   {
+    "name": "pytorch/pytorch",
+    "url": "https://github.com/pytorch/pytorch",
+    "desc": "Tensors and Dynamic neural networks in Python with strong GP…",
+    "lang": "Python",
+    "stars_total": 104292,
+    "stars_today": 314
+   }
+  ]
+ }
+}

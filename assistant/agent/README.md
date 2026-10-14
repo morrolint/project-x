@@ -5,8 +5,10 @@ ZCode 之后的自建 agent 运行时：一个 launchd 托管的常驻 Python �
 全部 HTTP 走 curl 子进程（LibreSSL 与本地代理的 TLS 兼容问题，见 AGENTS.md）。
 
 ```
-daemon.py        入口：轮询主循环、通道插件发现、确认门状态机、JSONL 日志、--check / --once
+daemon.py        入口：轮询主循环、通道插件发现、确认门（分级）、任务线进度、内置调度器（08:00/21:00 班次接管）、--check / --once / --shift
+tasks.py         任务线：五态状态机（RUNNING/WAITING_USER/DONE/FAILED/CANCELED），tasks/<id>.json 唯一事实源，重启恢复（治挂起丢失/重复投递）
 channels/        入站通道插件（telegram.py；飞书=新增插件+registry 行+AGENT_CHANNEL 切换）
+personas/        人设库（pm.md 产品经理；AGENT_PERSONA=pm 强制切换，或模型按任务自选）
 llm.py           OpenAI 兼容 /chat/completions（GLM/DeepSeek/Claude 环境变量切换）
 tools.py         工具集 ×10：收件箱 ×3 / 报告 / Trending 榜 / 读写列目录 / 记忆 ×2（写文件需确认）
 memory.py        markdown 记忆（按月归档 + 词元召回；第二批换 BM25）
@@ -41,7 +43,7 @@ python3 assistant/agent/daemon.py --once "在吗"    # 单条消息调试
 - 一切文件读写限 `assistant/` 内；`docs/`（敏感文件库）与 `.secrets.env`/`*.pem` 永拒。
 - `write_file` 是确认门工具：LLM 发起后 daemon 把预览发给你，回复「确认」才执行，
   回复其他内容则取消并按新指令处理（NeedsConfirmation，HANDOFF §六）。
-- 对话状态（近期窗口、确认挂起）只在内存，重启即清；跨会话事实进 `memory/`。
+- 确认门分级：`reports/` 等机器产物区写操作免确认；班次轮次宽口径（skills/proposals/registry）；`docs/` 与密钥**任何口径都拦**。用户对话历史在内存；确认挂起经任务线落盘，重启可恢复。
 
 ## 与既有资产的关系
 

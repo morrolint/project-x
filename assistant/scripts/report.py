@@ -398,6 +398,7 @@ def main():
         return 1
     out_dir = Path(args.output_dir).expanduser().resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
+    load_secrets()  # 凭据与 ASSISTANT_PROXY 要在数据抓取前就位（2026-10-10 修复：原先排在推送前，代理配置对数据源不生效）
 
     filename = f"{target_date.isoformat()}-{'早报' if args.kind == 'morning' else '晚间简报'}.md"
     out_path = out_dir / filename
@@ -425,7 +426,6 @@ def main():
     for n in source_notes:
         print("  " + n.split("（")[0][:80])
     # 推送：channels/ 插件逐个尝试（未配置则该通道自报失败；不阻断，备注进报告与 stdout）
-    load_secrets()
     push_text = build_push_text(args.kind, target_date, out_path, news, trending, hot, pending)
     for ch in load_push_channels():
         push_ok, push_err = ch.push(push_text)

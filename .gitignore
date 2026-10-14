@@ -7,3 +7,5 @@ assistant/.secrets.env
 __pycache__/
 .DS_Store
 assistant/agent/logs/
+assistant/agent/tasks/
+assistant/agent/state.json

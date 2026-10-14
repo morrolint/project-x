@@ -1,0 +1,172 @@
+{
+ "morning": {
+  "fetched_at": "2026-10-10T21:00:46",
+  "repos": [
+   {
+    "name": "morluto/rea",
+    "url": "https://github.com/morluto/rea",
+    "desc": "Reverse engineer anything with agents, from app behavior dow…",
+    "lang": "TypeScript",
+    "stars_total": 61623,
+    "stars_today": 25784
+   },
+   {
+    "name": "boykopovar/AnyPS5",
+    "url": "https://github.com/boykopovar/AnyPS5",
+    "desc": "Tool for automatic PS5 executables porting to Linux and Wind…",
+    "lang": "C++",
+    "stars_total": 24690,
+    "stars_today": 5831
+   },
+   {
+    "name": "storytold/artcraft",
+    "url": "https://github.com/storytold/artcraft",
+    "desc": "ArtCraft is an intentional crafting engine for artists, desi…",
+    "lang": "Rust",
+    "stars_total": 13008,
+    "stars_today": 3217
+   },
+   {
+    "name": "mattpocock/skills",
+    "url": "https://github.com/mattpocock/skills",
+    "desc": "Skills for Real Engineers. Straight from my .agents director…",
+    "lang": "Shell",
+    "stars_total": 283682,
+    "stars_today": 1737
+   },
+   {
+    "name": "cathrynlavery/diagram-design",
+    "url": "https://github.com/cathrynlavery/diagram-design",
+    "desc": "Editorial diagram design for Claude Code, Codex, GitHub Copi…",
+    "lang": "HTML",
+    "stars_total": 48497,
+    "stars_today": 1189
+   },
+   {
+    "name": "anthropics/knowledge-work-plugins",
+    "url": "https://github.com/anthropics/knowledge-work-plugins",
+    "desc": "Open source repository of plugins primarily intended for kno…",
+    "lang": "Python",
+    "stars_total": 28594,
+    "stars_today": 626
+   },
+   {
+    "name": "hugohe3/ppt-master",
+    "url": "https://github.com/hugohe3/ppt-master",
+    "desc": "AI turns documents or topics into real, native PowerPoint de…",
+    "lang": "Python",
+    "stars_total": 59016,
+    "stars_today": 372
+   },
+   {
+    "name": "multica-ai/andrej-karpathy-skills",
+    "url": "https://github.com/multica-ai/andrej-karpathy-skills",
+    "desc": "A single CLAUDE.md file to improve Claude Code behavior, der…",
+    "lang": "—",
+    "stars_total": 217880,
+    "stars_today": 279
+   },
+   {
+    "name": "mksglu/context-mode",
+    "url": "https://github.com/mksglu/context-mode",
+    "desc": "Context window optimization for AI coding agents. Sandboxes…",
+    "lang": "TypeScript",
+    "stars_total": 26062,
+    "stars_today": 178
+   },
+   {
+    "name": "huggingface/transformers",
+    "url": "https://github.com/huggingface/transformers",
+    "desc": "🤗 Transformers: the model-definition framework for state-of-…",
+    "lang": "Python",
+    "stars_total": 167006,
+    "stars_today": 94
+   }
+  ]
+ },
+ "evening": {
+  "fetched_at": "2026-10-10T21:11:06",
+  "repos": [
+   {
+    "name": "morluto/rea",
+    "url": "https://github.com/morluto/rea",
+    "desc": "Reverse engineer anything with agents, from app behavior dow…",
+    "lang": "TypeScript",
+    "stars_total": 61808,
+    "stars_today": 25784
+   },
+   {
+    "name": "boykopovar/AnyPS5",
+    "url": "https://github.com/boykopovar/AnyPS5",
+    "desc": "Tool for automatic PS5 executables porting to Linux and Wind…",
+    "lang": "C++",
+    "stars_total": 24721,
+    "stars_today": 5831
+   },
+   {
+    "name": "storytold/artcraft",
+    "url": "https://github.com/storytold/artcraft",
+    "desc": "ArtCraft is an intentional crafting engine for artists, desi…",
+    "lang": "Rust",
+    "stars_total": 13028,
+    "stars_today": 3217
+   },
+   {
+    "name": "mattpocock/skills",
+    "url": "https://github.com/mattpocock/skills",
+    "desc": "Skills for Real Engineers. Straight from my .agents director…",
+    "lang": "Shell",
+    "stars_total": 283693,
+    "stars_today": 1737
+   },
+   {
+    "name": "cathrynlavery/diagram-design",
+    "url": "https://github.com/cathrynlavery/diagram-design",
+    "desc": "Editorial diagram design for Claude Code, Codex, GitHub Copi…",
+    "lang": "HTML",
+    "stars_total": 48508,
+    "stars_today": 1189
+   },
+   {
+    "name": "anthropics/knowledge-work-plugins",
+    "url": "https://github.com/anthropics/knowledge-work-plugins",
+    "desc": "Open source repository of plugins primarily intended for kno…",
+    "lang": "Python",
+    "stars_total": 28597,
+    "stars_today": 626
+   },
+   {
+    "name": "hugohe3/ppt-master",
+    "url": "https://github.com/hugohe3/ppt-master",
+    "desc": "AI turns documents or topics into real, native PowerPoint de…",
+    "lang": "Python",
+    "stars_total": 59023,
+    "stars_today": 372
+   },
+   {
+    "name": "multica-ai/andrej-karpathy-skills",
+    "url": "https://github.com/multica-ai/andrej-karpathy-skills",
+    "desc": "A single CLAUDE.md file to improve Claude Code behavior, der…",
+    "lang": "—",
+    "stars_total": 217886,
+    "stars_today": 279
+   },
+   {
+    "name": "mksglu/context-mode",
+    "url": "https://github.com/mksglu/context-mode",
+    "desc": "Context window optimization for AI coding agents. Sandboxes…",
+    "lang": "TypeScript",
+    "stars_total": 26066,
+    "stars_today": 178
+   },
+   {
+    "name": "huggingface/transformers",
+    "url": "https://github.com/huggingface/transformers",
+    "desc": "🤗 Transformers: the model-definition framework for state-of-…",
+    "lang": "Python",
+    "stars_total": 167006,
+    "stars_today": 94
+   }
+  ]
+ }
+}

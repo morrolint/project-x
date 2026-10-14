@@ -85,7 +85,7 @@
       "status": "active",
       "added": "2026-10-09",
       "provenance": "v1 记忆层 v0.1：markdown 按月归档（assistant/memory/）+ 词元召回；daemon 每轮自动注入 Top3 相关记忆",
-      "note": "retain/recall 已实现；reflect 与 BM25/双层结构（glossary 热缓存，见 research/ 抄作业清单）属第二批"
+      "note": "v0.2（2026-10-14）：BM25 召回 + 双层（facts.md 稳定层 / 月度日志）+ Memory Defense 密钥打码 + profile.md 常备页注入——设计吸收自 hindsight（见 research/2026-10-14-hindsight-深读.md）；observations 后台固化在第二批后段"
     },
     {
       "id": "cap-rea",
@@ -136,6 +136,32 @@
       "repo": "TencentCloud/Octop",
       "provenance": "原 v1 候选：Python 自托管助手，原生飞书通道+记忆+知识库+cron",
       "note": "2026-10-09 用户定盘：不试装不安装，降级为源码级设计参考（消息归一化/工具循环）；通道已定 Telegram 先行，其飞书通道价值缩水。留档避免反复被提"
+    },
+    {
+      "id": "persona-pm",
+      "type": "persona",
+      "impl": "../agent/personas/pm.md",
+      "status": "active",
+      "added": "2026-10-10",
+      "provenance": "吸收自 msitarzewski/agency-agents（MIT，39k★）product/product-manager.md：中文改写并适配本项目（管 TASKS/提案/路线图/方案设计）；2026-10-10 用户批准"
+    },
+    {
+      "id": "skill-agent-discipline",
+      "type": "skill",
+      "impl": "../skills/agent-discipline/SKILL.md",
+      "status": "active",
+      "added": "2026-10-11",
+      "provenance": "2026-10-11 早报 ⭐ 项目 multica-ai/andrej-karpathy-skills（218k★）方法提炼：四条 agent 行为纪律（不替用户假设/管理困惑/摆取舍/该反驳就反驳），零安装"
+    },
+    {
+      "id": "cap-weknora",
+      "type": "capability",
+      "impl": null,
+      "status": "proposed",
+      "added": "2026-10-14",
+      "repo": "Tencent/WeKnora",
+      "provenance": "2026-10-14 月榜探索（用户授权自主调研）：腾讯开源本地知识库平台（RAG+Agent+Wiki，Docker 自托管，国内直连），v2 文档检索候选",
+      "note": "提案见 proposals/2026-10-14-cap-weknora.md；与 cap-pageindex 并案二选一（服务器形态选 WeKnora / 单进程形态选 PageIndex）"
     }
   ]
 }

@@ -1,0 +1,156 @@
+{
+ "morning": {
+  "fetched_at": "2026-10-13T08:05:08",
+  "repos": [
+   {
+    "name": "morluto/rea",
+    "url": "https://github.com/morluto/rea",
+    "desc": "Reverse engineer anything with agents, from app behavior dow…",
+    "lang": "TypeScript",
+    "stars_total": 155778,
+    "stars_today": 45327
+   },
+   {
+    "name": "storytold/artcraft",
+    "url": "https://github.com/storytold/artcraft",
+    "desc": "ArtCraft is an intentional crafting engine for artists, desi…",
+    "lang": "Rust",
+    "stars_total": 21922,
+    "stars_today": 4095
+   },
+   {
+    "name": "cathrynlavery/diagram-design",
+    "url": "https://github.com/cathrynlavery/diagram-design",
+    "desc": "Editorial diagram design for Claude Code, Codex, GitHub Copi…",
+    "lang": "HTML",
+    "stars_total": 52557,
+    "stars_today": 2081
+   },
+   {
+    "name": "bilawalsidhu/gods-eye-view",
+    "url": "https://github.com/bilawalsidhu/gods-eye-view",
+    "desc": "A spy satellite simulator in your browser, except the data i…",
+    "lang": "JavaScript",
+    "stars_total": 53622,
+    "stars_today": 1895
+   },
+   {
+    "name": "lyogavin/airllm",
+    "url": "https://github.com/lyogavin/airllm",
+    "desc": "AirLLM 2.8T LLM inference with single 4GB GPU",
+    "lang": "Jupyter Notebook",
+    "stars_total": 37505,
+    "stars_today": 879
+   },
+   {
+    "name": "Alishahryar1/free-claude-code",
+    "url": "https://github.com/Alishahryar1/free-claude-code",
+    "desc": "Use Claude Code, Codex, VSCode, Pi, and OpenCode (and 6 othe…",
+    "lang": "Python",
+    "stars_total": 59087,
+    "stars_today": 626
+   },
+   {
+    "name": "mksglu/context-mode",
+    "url": "https://github.com/mksglu/context-mode",
+    "desc": "Context window optimization for AI coding agents. Sandboxes…",
+    "lang": "TypeScript",
+    "stars_total": 27272,
+    "stars_today": 246
+   },
+   {
+    "name": "open-webui/open-webui",
+    "url": "https://github.com/open-webui/open-webui",
+    "desc": "User-friendly AI Interface (Supports Ollama, OpenAI API, ...…",
+    "lang": "Python",
+    "stars_total": 154969,
+    "stars_today": 157
+   },
+   {
+    "name": "microsoft/BitNet",
+    "url": "https://github.com/microsoft/BitNet",
+    "desc": "Official inference framework for 1-bit LLMs",
+    "lang": "C++",
+    "stars_total": 40896,
+    "stars_today": 97
+   }
+  ]
+ },
+ "evening": {
+  "fetched_at": "2026-10-13T21:05:01",
+  "repos": [
+   {
+    "name": "morluto/rea",
+    "url": "https://github.com/morluto/rea",
+    "desc": "Reverse engineer anything with agents, from app behavior dow…",
+    "lang": "TypeScript",
+    "stars_total": 188985,
+    "stars_today": 54706
+   },
+   {
+    "name": "storytold/artcraft",
+    "url": "https://github.com/storytold/artcraft",
+    "desc": "ArtCraft is an intentional crafting engine for artists, desi…",
+    "lang": "Rust",
+    "stars_total": 24163,
+    "stars_today": 4078
+   },
+   {
+    "name": "bilawalsidhu/gods-eye-view",
+    "url": "https://github.com/bilawalsidhu/gods-eye-view",
+    "desc": "A spy satellite simulator in your browser, except the data i…",
+    "lang": "JavaScript",
+    "stars_total": 54622,
+    "stars_today": 1961
+   },
+   {
+    "name": "cathrynlavery/diagram-design",
+    "url": "https://github.com/cathrynlavery/diagram-design",
+    "desc": "Editorial diagram design for Claude Code, Codex, GitHub Copi…",
+    "lang": "HTML",
+    "stars_total": 53481,
+    "stars_today": 1813
+   },
+   {
+    "name": "debpalash/VoiceStudio",
+    "url": "https://github.com/debpalash/VoiceStudio",
+    "desc": "VoiceStudio is the open-source, fully-local ElevenLabs alter…",
+    "lang": "Python",
+    "stars_total": 61597,
+    "stars_today": 1691
+   },
+   {
+    "name": "lyogavin/airllm",
+    "url": "https://github.com/lyogavin/airllm",
+    "desc": "AirLLM 2.8T LLM inference with single 4GB GPU",
+    "lang": "Jupyter Notebook",
+    "stars_total": 38012,
+    "stars_today": 1004
+   },
+   {
+    "name": "mksglu/context-mode",
+    "url": "https://github.com/mksglu/context-mode",
+    "desc": "Context window optimization for AI coding agents. Sandboxes…",
+    "lang": "TypeScript",
+    "stars_total": 27812,
+    "stars_today": 978
+   },
+   {
+    "name": "xtool-org/xtool",
+    "url": "https://github.com/xtool-org/xtool",
+    "desc": "Cross-platform Xcode replacement. Build and deploy iOS apps…",
+    "lang": "Swift",
+    "stars_total": 8662,
+    "stars_today": 936
+   },
+   {
+    "name": "vercel-labs/skills",
+    "url": "https://github.com/vercel-labs/skills",
+    "desc": "The open agent skills tool - npx skills",
+    "lang": "TypeScript",
+    "stars_total": 34171,
+    "stars_today": 187
+   }
+  ]
+ }
+}

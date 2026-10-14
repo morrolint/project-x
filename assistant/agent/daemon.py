@@ -23,6 +23,7 @@ import os
 import re
 import signal
 import sys
+import threading
 import time
 from collections import deque
 from datetime import datetime
@@ -37,9 +38,26 @@ if str(AGENT_DIR) not in sys.path:
 import _http  # noqa: E402
 import llm  # noqa: E402
 import memory  # noqa: E402
+import tasks as tasks_mod  # noqa: E402
 import tools as tools_mod  # noqa: E402
 
 CHANNELS_DIR = AGENT_DIR / "channels"
+STATE_FILE = AGENT_DIR / "state.json"   # update_offset 游标 + 班次去重（重启不丢、不重复消费）
+
+SHIFT_PROMPTS = {
+    "morning": """执行今天的早班（你是 Project X 个人助手，本条为内部班次指令）：
+1. 调 run_report 生成 morning 早报（已存在则跳过）。
+2. read_file 读生成的早报，把「GitHub Trending」节升级为逐项目解读（先读技能 github-trending-deep-read 的方法；对榜上不熟的项目先 trending_top 拿数据、凭简介与已知知识写，不编造），再 write_file 整体写回报告文件。
+3. 用 web 搜索补 2-3 条科技/AI 动态进「科技 / AI」节（带日期来源），并重写「AI 一句话」。
+4. 处理收件箱：inbox_list 查看，能办的用工具办，办完 inbox_done；【待批复/待重排】类只汇报不执行。
+5. 最后给用户发一段早班汇报（精选要闻 5 条内、Trending 头条、收件箱一句话），并注明报告文件路径。全程中文，禁用 markdown 表格。""",
+    "evening": """执行今天的晚班（你是 Project X 个人助手，本条为内部班次指令）：
+1. 调 run_report 生成 evening 晚间简报（自动与早报 sidecar 对比 ↑↓/NEW）。
+2. read_file 简报，在「Trending 复盘」节后追加两三句点评（口径披露：对比基准时点；换血/稳定/绝对值三个角度）。
+3. 用 web 搜索补 2-3 条白天科技动态进「白天动态」节。
+4. 收件箱巡检同早班（能办的办，等批复的汇报）。
+5. 最后发晚班汇报（对比亮点、白天动态精选、收件箱一句话）。全程中文，禁用 markdown 表格。""",
+}
 CONFIRM_WORDS = {"确认", "确认执行", "同意", "好", "是的", "ok", "OK", "Ok", "yes", "y", "Y", "是"}
 MAX_TOOL_ROUNDS = 8   # 单轮消息最多工具循环次数，防失控
 HISTORY_MAX = 12      # 近期上下文窗口（内存态，仅 user/assistant 文本）
@@ -91,6 +109,27 @@ def load_secrets():
                 os.environ.setdefault(k.strip(), v.strip())
 
 
+PERSONAS_DIR = AGENT_DIR / "personas"
+
+
+def personas_index():
+    """扫描 agent/personas/*.md 的 frontmatter，生成人设索引文本。"""
+    if not PERSONAS_DIR.exists():
+        return ""
+    items = []
+    for f in sorted(PERSONAS_DIR.glob("*.md")):
+        try:
+            fm = f.read_text(encoding="utf-8").split("---")
+            sec = fm[1] if len(fm) > 1 else ""
+            name = re.search(r"^name:\s*(.+)$", sec, re.M)
+            vibe = re.search(r"^vibe:\s*(.+)$", sec, re.M)
+        except OSError:
+            continue
+        items.append(f"- {f.stem}：{name.group(1).strip() if name else '？'}"
+                     f"——{vibe.group(1).strip() if vibe else ''}")
+    return "\n".join(items)
+
+
 def skills_index():
     """扫描 assistant/skills/ 的 SKILL.md frontmatter，生成技能索引文本（找不到则返回空串）。
     演示实测教训：没有列目录能力时 agent 会瞎猜技能路径，索引自注入是硬需求。"""
@@ -106,6 +145,22 @@ def skills_index():
             continue
         items.append(f"- {f.parent.name}：{(desc.group(1).strip() if desc else '')}")
     return "\n".join(items)
+
+
+def load_state():
+    try:
+        return json.loads(STATE_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def save_state(**kv):
+    st = load_state()
+    st.update(kv)
+    try:
+        STATE_FILE.write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
+    except OSError:
+        pass
 
 
 class Logger:
@@ -129,19 +184,40 @@ class Daemon:
         tools_mod.CHANNEL = tg_client  # send_chart 等需要出站的工具用（None 时只渲染不发送）
         self.log = Logger()
         self.history = deque(maxlen=HISTORY_MAX)
-        self.pending = None  # 确认门挂起态：{"messages": [...], "calls": [{"id","name","args"}]}
+        self.pending = None  # 确认门挂起态：{"messages": [...], "calls": [...], "task": TaskLine|None}
+        self.task = None     # 当前任务线（进度面板）
+        self._internal = False  # 班次/内勤轮次：宽口径免确认 + 不进对话历史
+
+    def restore_pending(self, recovered):
+        """启动恢复：把磁盘上 WAITING_USER 的任务重新挂回确认门。"""
+        payload = recovered["payload"]
+        self.pending = {"messages": payload.get("messages") or [],
+                        "calls": payload.get("calls") or [],
+                        "task": recovered["task"]}
+        self.log.log("recover", note=f"恢复挂起任务 {recovered['task'].id}")
+        recovered["task"].push(self.tg)  # 刷新进度消息：仍在等你确认
 
     # ---- 对外入口
 
     def handle_text(self, text, reply_to=None):
         """处理一条用户文本：跑完整轮 agent 循环（含确认门），把最终回复发出去。"""
+        self._internal = False
         self.history.append({"role": "user", "content": text})
+        self.task = tasks_mod.TaskLine(kind="chat", label=text[:24])
+        self.task.push(self.tg, edit=False)
+        return self._dispatch(text, reply_to)
+
+    def _dispatch(self, text, reply_to):
         if self.pending:
             confirmed = text.strip().lower() in CONFIRM_WORDS
+            task = self.pending.get("task")
+            if task:
+                task.state = "RUNNING"
+                task.note = "确认执行中" if confirmed else "按新指令处理"
+                task.push(self.tg)
             msgs = self.pending["messages"]
             calls = self.pending["calls"]
             self.pending = None
-            filler = "操作已执行，结果如下" if confirmed else "用户未确认，该操作已取消。"
             for c in calls:
                 result = tools_mod.execute(c["name"], c["args"], self.log) if confirmed \
                     else "用户未确认，该操作已取消。"
@@ -152,28 +228,82 @@ class Daemon:
             return self._turn(msgs, reply_to)
         return self._turn(self._new_conversation(text), reply_to)
 
+    def run_shift(self, kind):
+        """内部班次（调度器或 --shift 触发）：独立于用户对话历史，宽口径免确认。"""
+        self._internal = True
+        self.task = tasks_mod.TaskLine(kind=f"shift-{kind}",
+                                       label="早班" if kind == "morning" else "晚班")
+        self.task.push(self.tg, edit=False)
+        self.log.log("shift", kind=kind, note="班次启动")
+        try:
+            self._turn(self._new_conversation(SHIFT_PROMPTS[kind], use_history=False), None)
+        except Exception as e:  # noqa: BLE001 —— 班次崩溃要有尸检记录
+            self.log.log("err", err=f"shift {kind}: {type(e).__name__}: {e}")
+            if self.tg:
+                self.tg.send(f"⚠️ {kind} 班次内部错误：{type(e).__name__}")
+        finally:
+            self._internal = False
+
     # ---- 内部
 
-    def _new_conversation(self, text):
+    def _new_conversation(self, text, use_history=True):
         now = datetime.now()
         sys_prompt = (f"{SYSTEM_PROMPT}\n\n（今天：{now:%Y-%m-%d} 周{WEEKDAY[now.weekday()]}）")
         skills = skills_index()
         if skills:
             sys_prompt += ("\n\n可用技能（任务匹配时先 read_file 读取对应 "
                            "assistant/skills/<名字>/SKILL.md 并按其方法执行）：\n" + skills)
+        profile = memory.profile_text()
+        if profile:
+            sys_prompt += ("\n\n用户档案（常备页，当前世界观的底座；与眼前任务冲突时以眼前为准）：\n" + profile)
+        # 人设层：AGENT_PERSONA 强制注入；否则给索引由模型按任务性质自选
+        forced = os.environ.get("AGENT_PERSONA", "").strip()
+        if forced and (PERSONAS_DIR / f"{forced}.md").exists():
+            sys_prompt += ("\n\n【当前人设（强制）——以此身份与标准工作，系统铁律仍最高】\n"
+                           + (PERSONAS_DIR / f"{forced}.md").read_text(encoding="utf-8")[:6000])
+        else:
+            pidx = personas_index()
+            if pidx:
+                sys_prompt += ("\n\n可用人设（任务性质匹配时先 read_file 读取 "
+                               "assistant/agent/personas/<名>.md 并以其身份与标准工作；铁律冲突时铁律优先）：\n" + pidx)
         recalled = memory.recall(text, top=3)
         if recalled:
             sys_prompt += "\n\n相关记忆召回：\n" + "\n".join(f"- {r}" for r in recalled)
         msgs = [{"role": "system", "content": sys_prompt}]
-        msgs += list(self.history)[:-1]  # 近期上下文（不含刚这条，它在下面）
+        if use_history:
+            msgs += list(self.history)[:-1]  # 近期上下文（不含刚这条，它在下面）
         msgs.append({"role": "user", "content": text})
         return msgs
 
+    def _heartbeat_loop(self):
+        """长任务期间的"正在输入"心跳（约 5 秒过期，4.5 秒续一次）。"""
+        while not self._hb_stop.wait(4.5):
+            if self.tg is not None and hasattr(self.tg, "typing"):
+                self.tg.typing()
+
     def _turn(self, msgs, reply_to):
+        self._hb_stop = threading.Event()
+        threading.Thread(target=self._heartbeat_loop, daemon=True).start()
+        try:
+            return self._turn_inner(msgs, reply_to)
+        finally:
+            self._hb_stop.set()
+
+    def _turn_inner(self, msgs, reply_to):
         for rnd in range(MAX_TOOL_ROUNDS):
+            if self.task:
+                done_names = [tools_mod.parse_call(c)[0]
+                              for m in msgs if m.get("role") == "assistant"
+                              for c in (m.get("tool_calls") or [])]
+                self.task.update(rounds=rnd + 1, last_tools=done_names)
+                if rnd >= 1:  # 首轮秒回的不刷屏，从第 2 轮起原地刷新进度
+                    self.task.push(self.tg)
             msg, usage, err = llm.chat(msgs, tools_mod.schemas())
             if err:
                 self.log.log("llm_err", err=err)
+                if self.task:
+                    self.task.finish("FAILED", f"LLM 调用失败：{err[:80]}")
+                    self.task.push(self.tg)
                 return self._say(f"⚠️ LLM 调用失败：{err}", reply_to)
             if usage:
                 self.log.log("llm", model=llm.model_name(), usage=usage)
@@ -184,24 +314,33 @@ class Daemon:
             calls = msg.get("tool_calls") or []
             if not calls:
                 content = (msg.get("content") or "").strip() or "（空回复）"
+                if self.task:
+                    self.task.finish("DONE", f"{len([1 for m in msgs if m.get('role') == 'tool'])} 次工具，{len(content)} 字交付")
+                    self.task.push(self.tg)
                 return self._say(content, reply_to, assistant_out=content)
-            # 先执行免确认工具；遇到需确认的，挂起并一次性问用户
+            # 确认门分级：免确认路径（reports/ 等机器产物区）直行；班次轮次宽口径
             need_confirm = []
             for i, c in enumerate(calls):
                 name, args = tools_mod.parse_call(c)
                 cid = c.get("id") or f"call_{i}"
-                if tools_mod.is_confirm(name):
+                if tools_mod.is_confirm(name) and not tools_mod.auto_approve(name, args, wide=self._internal):
                     need_confirm.append({"id": cid, "name": name, "args": args})
                     continue
                 result = tools_mod.execute(name, args, self.log)
                 msgs.append({"role": "tool", "tool_call_id": cid, "content": result})
             if need_confirm:
-                self.pending = {"messages": msgs, "calls": need_confirm}
+                self.pending = {"messages": msgs, "calls": need_confirm, "task": self.task}
+                if self.task:  # WAITING_USER 落盘（tasks/<id>.json 唯一事实源，重启可恢复）
+                    self.task.wait_user({"messages": msgs, "calls": need_confirm})
+                    self.task.push(self.tg)
                 lines = [f"• {c['name']}：{tools_mod.preview(c['name'], c['args'])}"
                          for c in need_confirm]
                 return self._say("⚠️ 需要你确认：\n" + "\n".join(lines) +
                                  "\n\n回复「确认」执行；回复其他内容则取消该操作并按新指令处理。",
                                  reply_to)
+        if self.task:
+            self.task.finish("FAILED", "工具循环轮次用尽")
+            self.task.push(self.tg)
         return self._say("⚠️ 工具循环轮次用尽，先回复到这里；需要细节可以再问我。", reply_to)
 
     def _say(self, text, reply_to, assistant_out=None):
@@ -217,8 +356,35 @@ class Daemon:
         return err
 
 
+def _should_fire_shift(now, kind, done_dates):
+    """班次触发判定：kind=morning 在 08:00-08:59 / evening 在 21:00-21:59，当天未跑过即触发。"""
+    hour = 8 if kind == "morning" else 21
+    return now.hour == hour and now.strftime("%Y-%m-%d") != done_dates.get(kind)
+
+
+def _scheduler_loop(tg_client, daemon, stop):
+    """内置调度器（daemon 接管早晚班的地基）：每 30s 检查，到点起班次线程。"""
+    while not stop["flag"]:
+        try:
+            now = datetime.now()
+            done = load_state().get("shifts", {})
+            for kind in ("morning", "evening"):
+                if _should_fire_shift(now, kind, done):
+                    shifts = load_state().get("shifts", {})
+                    shifts[kind] = now.strftime("%Y-%m-%d")  # 先记账防重入
+                    save_state(shifts=shifts)
+                    daemon.log.log("shift", kind=kind, note="调度器触发")
+                    threading.Thread(target=daemon.run_shift, args=(kind,), daemon=True).start()
+        except Exception as e:  # noqa: BLE001 —— 调度器自身绝不死
+            try:
+                daemon.log.log("err", err=f"scheduler: {type(e).__name__}: {e}")
+            except Exception:  # noqa: BLE001
+                pass
+        stop["flag"] or time.sleep(30)
+
+
 def run(tg_client, daemon):
-    """主循环：长轮询 → 白名单过滤 → 逐条处理。SIGTERM/SIGINT 优雅退出。"""
+    """主循环：长轮询 → 白名单过滤 → 逐条处理；offset 落盘；调度器随行。SIGTERM/SIGINT 优雅退出。"""
     stop = {"flag": False}
 
     def _sig(_a, _b):
@@ -226,7 +392,15 @@ def run(tg_client, daemon):
 
     signal.signal(signal.SIGTERM, _sig)
     signal.signal(signal.SIGINT, _sig)
-    daemon.log.log("boot", note="daemon 启动")
+    # 启动恢复：任务线收尾/复活 + offset 续读（治重启丢挂起态与重复投递）
+    recovered = tasks_mod.recover(tg_client)
+    if recovered:
+        daemon.restore_pending(recovered)
+    saved = load_state().get("update_offset")
+    if saved and getattr(tg_client, "offset", 0) < saved:
+        tg_client.offset = saved
+    threading.Thread(target=_scheduler_loop, args=(tg_client, daemon, stop), daemon=True).start()
+    daemon.log.log("boot", note="daemon 启动（调度器+任务线已挂载）")
     print(f"daemon 已启动（chat={tg_client.chat_id}，model={llm.model_name()}），Ctrl-C 退出")
     fails = 0
     while not stop["flag"]:
@@ -242,6 +416,8 @@ def run(tg_client, daemon):
                 time.sleep(min(30, 3 + fails * 2))
             continue
         fails = 0
+        if updates:
+            save_state(update_offset=tg_client.offset)  # 消费即落盘
         for u in updates:
             msg = u.get("message") or {}
             chat_id = str((msg.get("chat") or {}).get("id", ""))
@@ -256,10 +432,14 @@ def run(tg_client, daemon):
                 daemon.handle_text(text, reply_to=msg.get("message_id"))
             except Exception as e:  # noqa: BLE001 —— 单条消息崩溃不拖垮 daemon
                 daemon.log.log("err", err=f"{type(e).__name__}: {e}")
+                if daemon.task:
+                    daemon.task.finish("FAILED", f"内部错误：{type(e).__name__}")
+                    daemon.task.push(tg_client)
                 try:
                     tg_client.send(f"⚠️ 内部错误：{type(e).__name__}: {e}")
                 except Exception:  # noqa: BLE001
                     pass
+    tasks_mod.gc()
     daemon.log.log("boot", note="daemon 退出")
 
 
@@ -281,6 +461,8 @@ def selfcheck():
     print(f"入站通道插件: {', '.join(chans) or '无'}"
           f"（AGENT_CHANNEL={os.environ.get('AGENT_CHANNEL') or 'telegram（默认）'}）")
     print("日志目录:", LOGS_DIR)
+    print("任务线:", tasks_mod.TASKS_DIR, f"（在档 {len(list(tasks_mod.TASKS_DIR.glob('*.json')))} 条）")
+    print(f"调度器: 08:00 早班 / 21:00 晚班（内置，--shift 可手动触发）")
     return 0
 
 
@@ -288,6 +470,7 @@ def main():
     ap = argparse.ArgumentParser(description="Project X 常驻 agent daemon（v1 最小闭环）")
     ap.add_argument("--check", action="store_true", help="配置自检，不发网络请求")
     ap.add_argument("--once", metavar="TEXT", help="处理单条消息后退出（调试）")
+    ap.add_argument("--shift", choices=["morning", "evening"], help="手动触发一个班次后退出（调度器同款流程）")
     args = ap.parse_args()
 
     load_secrets()
@@ -314,6 +497,12 @@ def main():
     daemon = Daemon(tg_client)
     if args.once:
         daemon.handle_text(args.once)
+        return 0
+    if args.shift:
+        recovered = tasks_mod.recover(tg_client)
+        if recovered:
+            daemon.restore_pending(recovered)
+        daemon.run_shift(args.shift)
         return 0
     run(tg_client, daemon)
     return 0

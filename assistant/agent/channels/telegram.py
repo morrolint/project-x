@@ -66,14 +66,34 @@ class Telegram:
         return result or [], None
 
     def send(self, text, reply_to=None):
-        """发送纯文本（不用 Markdown/HTML，避免转义问题）。返回最后一个错误或 None。"""
-        err = None
+        """发送纯文本。返回最后一个错误或 None（兼容旧调用方）。"""
+        err, _ = self.send_ex(text, reply_to)
+        return err
+
+    def send_ex(self, text, reply_to=None):
+        """发送纯文本。返回 (错误|None, 最后一条消息的 message_id|None)——进度面板要拿 id 做原地刷新。"""
+        err, last_id = None, None
         for chunk in _split(text):
             params = {"chat_id": self.chat_id, "text": chunk,
                       "disable_web_page_preview": True}
             if reply_to:
                 params["reply_to_message_id"] = reply_to
-            _, err = self.api("sendMessage", curl_timeout=30, **params)
+            result, err = self.api("sendMessage", curl_timeout=30, **params)
+            if result:
+                last_id = result.get("message_id", last_id)
+        return err, last_id
+
+    def edit_message(self, msg_id, text):
+        """编辑自己发的消息（进度面板原地刷新）。返回 (ok, 错误|None)。"""
+        result, err = self.api("editMessageText", curl_timeout=15,
+                               chat_id=self.chat_id, message_id=int(msg_id),
+                               text=str(text)[:3800], disable_web_page_preview=True)
+        return err is None, err
+
+    def typing(self):
+        """发送"正在输入"状态（Telegram 端显示约 5 秒）。返回错误或 None。"""
+        _, err = self.api("sendChatAction", curl_timeout=10,
+                          chat_id=self.chat_id, action="typing")
         return err
 
     def send_photo(self, png_path, caption=""):

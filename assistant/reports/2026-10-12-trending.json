@@ -1,0 +1,148 @@
+{
+ "morning": {
+  "fetched_at": "2026-10-12T08:05:50",
+  "repos": [
+   {
+    "name": "morluto/rea",
+    "url": "https://github.com/morluto/rea",
+    "desc": "Reverse engineer anything with agents, from app behavior dow…",
+    "lang": "TypeScript",
+    "stars_total": 103476,
+    "stars_today": 25599
+   },
+   {
+    "name": "boykopovar/AnyPS5",
+    "url": "https://github.com/boykopovar/AnyPS5",
+    "desc": "Tool for automatic PS5 executables porting to Linux and Wind…",
+    "lang": "C++",
+    "stars_total": 30057,
+    "stars_today": 3952
+   },
+   {
+    "name": "storytold/artcraft",
+    "url": "https://github.com/storytold/artcraft",
+    "desc": "ArtCraft is an intentional crafting engine for artists, desi…",
+    "lang": "Rust",
+    "stars_total": 17822,
+    "stars_today": 2957
+   },
+   {
+    "name": "cathrynlavery/diagram-design",
+    "url": "https://github.com/cathrynlavery/diagram-design",
+    "desc": "Editorial diagram design for Claude Code, Codex, GitHub Copi…",
+    "lang": "HTML",
+    "stars_total": 50307,
+    "stars_today": 1083
+   },
+   {
+    "name": "bilawalsidhu/gods-eye-view",
+    "url": "https://github.com/bilawalsidhu/gods-eye-view",
+    "desc": "A spy satellite simulator in your browser, except the data i…",
+    "lang": "JavaScript",
+    "stars_total": 51645,
+    "stars_today": 886
+   },
+   {
+    "name": "lyogavin/airllm",
+    "url": "https://github.com/lyogavin/airllm",
+    "desc": "AirLLM 70B inference with single 4GB GPU",
+    "lang": "Jupyter Notebook",
+    "stars_total": 36464,
+    "stars_today": 548
+   },
+   {
+    "name": "chrislgarry/Apollo-11",
+    "url": "https://github.com/chrislgarry/Apollo-11",
+    "desc": "Original Apollo 11 Guidance Computer (AGC) source code for t…",
+    "lang": "Assembly",
+    "stars_total": 74234,
+    "stars_today": 466
+   },
+   {
+    "name": "pytorch/pytorch",
+    "url": "https://github.com/pytorch/pytorch",
+    "desc": "Tensors and Dynamic neural networks in Python with strong GP…",
+    "lang": "Python",
+    "stars_total": 104474,
+    "stars_today": 315
+   }
+  ]
+ },
+ "evening": {
+  "fetched_at": "2026-10-12T21:05:44",
+  "repos": [
+   {
+    "name": "morluto/rea",
+    "url": "https://github.com/morluto/rea",
+    "desc": "Reverse engineer anything with agents, from app behavior dow…",
+    "lang": "TypeScript",
+    "stars_total": 134056,
+    "stars_today": 45495
+   },
+   {
+    "name": "storytold/artcraft",
+    "url": "https://github.com/storytold/artcraft",
+    "desc": "ArtCraft is an intentional crafting engine for artists, desi…",
+    "lang": "Rust",
+    "stars_total": 20073,
+    "stars_today": 4106
+   },
+   {
+    "name": "cathrynlavery/diagram-design",
+    "url": "https://github.com/cathrynlavery/diagram-design",
+    "desc": "Editorial diagram design for Claude Code, Codex, GitHub Copi…",
+    "lang": "HTML",
+    "stars_total": 51778,
+    "stars_today": 2100
+   },
+   {
+    "name": "bilawalsidhu/gods-eye-view",
+    "url": "https://github.com/bilawalsidhu/gods-eye-view",
+    "desc": "A spy satellite simulator in your browser, except the data i…",
+    "lang": "JavaScript",
+    "stars_total": 52735,
+    "stars_today": 1903
+   },
+   {
+    "name": "lyogavin/airllm",
+    "url": "https://github.com/lyogavin/airllm",
+    "desc": "AirLLM 70B inference with single 4GB GPU",
+    "lang": "Jupyter Notebook",
+    "stars_total": 37040,
+    "stars_today": 886
+   },
+   {
+    "name": "Alishahryar1/free-claude-code",
+    "url": "https://github.com/Alishahryar1/free-claude-code",
+    "desc": "Use Claude Code, Codex, VSCode, Pi, and OpenCode (and 6 othe…",
+    "lang": "Python",
+    "stars_total": 58358,
+    "stars_today": 506
+   },
+   {
+    "name": "mksglu/context-mode",
+    "url": "https://github.com/mksglu/context-mode",
+    "desc": "Context window optimization for AI coding agents. Sandboxes…",
+    "lang": "TypeScript",
+    "stars_total": 26849,
+    "stars_today": 485
+   },
+   {
+    "name": "microsoft/BitNet",
+    "url": "https://github.com/microsoft/BitNet",
+    "desc": "Official inference framework for 1-bit LLMs",
+    "lang": "C++",
+    "stars_total": 40748,
+    "stars_today": 195
+   },
+   {
+    "name": "open-webui/open-webui",
+    "url": "https://github.com/open-webui/open-webui",
+    "desc": "User-friendly AI Interface (Supports Ollama, OpenAI API, ...…",
+    "lang": "Python",
+    "stars_total": 154474,
+    "stars_today": 142
+   }
+  ]
+ }
+}
