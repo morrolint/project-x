@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<title>A · 数据巨构 — 天际线即仪表盘</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* 方向 A：全幅数据天际线。骨架 = 视觉层(楼群) + 左下内容面板 + 顶部状态条。自包含样式。 */
+:root{--bg:#05070a;--panel:#090d12;--text:#cdd9e1;--dim:#5f7385;--cyan:#38e1ff;--amber:#ffb454;--red:#ff5d5d;--line:rgba(122,218,255,.14)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:1440px;height:900px;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Noto Sans SC',sans-serif;font-size:15px;line-height:1.7;position:relative}
+.mono{font-family:'JetBrains Mono',monospace}
+/* 状态条 */
+.bar{position:absolute;top:0;left:0;right:0;height:58px;display:flex;align-items:center;gap:18px;padding:0 26px;border-bottom:1px solid var(--line);background:rgba(5,7,10,.72);z-index:5}
+.brand{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:21px;letter-spacing:.14em;color:var(--cyan)}
+.bar .pill{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);border:1px solid var(--line);padding:3px 10px;letter-spacing:.06em}
+.bar .pill b{color:var(--cyan);font-weight:500}
+.bar .clock{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text)}
+.bar .count{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber);border:1px solid rgba(255,180,84,.3);padding:3px 10px}
+/* 楼群舞台 */
+.stage{position:absolute;inset:58px 0 0 0}
+.stage svg{position:absolute;inset:0;width:100%;height:100%}
+.blabel{position:absolute;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.12em;color:var(--dim)}
+.blabel b{display:block;color:var(--cyan);font-size:12px;font-weight:500}
+.blabel .warn{color:var(--amber)}
+/* 左下内容面板 */
+.console{position:absolute;left:26px;bottom:26px;width:520px;background:rgba(9,13,18,.9);border:1px solid var(--line);padding:18px 22px;z-index:6}
+.console::before,.console::after,.console .c::before,.console .c::after{content:"";position:absolute;width:10px;height:10px;border:1px solid var(--cyan);opacity:.8}
+.console::before{top:-1px;left:-1px;border-right:0;border-bottom:0}
+.console::after{top:-1px;right:-1px;border-left:0;border-bottom:0}
+.console .c::before{bottom:-1px;left:-1px;border-right:0;border-top:0}
+.console .c::after{bottom:-1px;right:-1px;border-left:0;border-top:0}
+.console h2{font-family:'Rajdhani',sans-serif;font-size:16px;letter-spacing:.2em;color:var(--cyan);margin-bottom:10px}
+.console li{list-style:none;padding:7px 0;border-bottom:1px dashed rgba(122,218,255,.1);font-size:13.5px}
+.console li:last-child{border:0}
+.console li b{color:var(--text)}
+.console .foot{margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim)}
+.console .foot .warn{color:var(--amber)}
+/* 右下巨构宣言 */
+.declare{position:absolute;right:30px;bottom:30px;text-align:right;z-index:6}
+.declare h1{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:54px;letter-spacing:.1em;color:var(--text);line-height:1.05}
+.declare h1 span{color:var(--cyan)}
+.declare p{color:var(--dim);font-size:14px;margin-top:6px}
+.scanlines{position:absolute;inset:0;pointer-events:none;z-index:9;opacity:.5;background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(0,0,0,.14) 3px 4px)}
+</style>
+</head>
+<body>
+<div class="bar">
+  <span class="brand">PROJECT-X // 巨构终端</span>
+  <span class="pill"><b>DAEMON</b> 在线</span>
+  <span class="pill"><b>GLM-5.3-FLASH</b></span>
+  <span class="pill"><b>记忆</b> 43</span>
+  <span class="pill"><b>REGISTRY</b> 20</span>
+  <span class="count">距晚班 03:12:44</span>
+  <span class="clock mono">17:47:16</span>
+</div>
+
+<div class="stage">
+  <object data="skyline.svg" type="image/svg+xml" style="position:absolute;left:0;bottom:0;width:1440px;height:620px;pointer-events:none"></object>
+  <!-- 数据楼群标注（灯是真的） -->
+  <div class="blabel" style="left:170px;bottom:300px"><b>记忆塔</b>43 条 · 信标 ×2<span class="warn">等你确认</span></div>
+  <div class="blabel" style="left:660px;bottom:250px"><b>报告楼</b>早报 ✓ 简报待班</div>
+  <div class="blabel" style="left:1040px;bottom:290px"><b>REGISTRY 区</b>6 类 20 条</div>
+  <div class="blabel" style="left:960px;bottom:470px"><b>观测台</b>TRENDING · rea +54,679/日</div>
+</div>
+
+<div class="console"><span class="c"></span>
+  <h2>TODAY · 2026-10-14</h2>
+  <ul>
+    <li><b>全国卫生与健康大会</b>召开，部署"十五五"卫生健康发展道路</li>
+    <li><b>WIPO 全球百强创新集群</b>：中国 25 个上榜，连续四年世界第一</li>
+    <li><b>iPhone 断网跑 35B</b> 多模态国产开源模型——端侧再下一城</li>
+    <li><b>Meta Muse Wonder</b> 发布：Muse Spark 的跨代升级</li>
+  </ul>
+  <div class="foot">📥 <span class="warn">待重排 ×1</span> 进度面板方案 v1 · 🐙 rea 七天 20.6 万★</div>
+</div>
+
+<div class="declare">
+  <h1>巨构<span>·</span>运转中</h1>
+  <p>每盏灯都是真实数据 —— 一座住着你助手的结构</p>
+</div>
+<div class="scanlines"></div>
+</body>
+</html>

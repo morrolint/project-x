@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<title>B · 舰桥 — 内容即首屏</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* 方向 B：编辑内容优先。骨架 = 顶部状态条 + 中栏早报排版 + 右栏任务流 + 底部数据地平线。自包含样式。 */
+:root{--bg:#05070a;--panel:#090d12;--text:#cdd9e1;--dim:#5f7385;--cyan:#38e1ff;--amber:#ffb454;--red:#ff5d5d;--line:rgba(122,218,255,.14)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:1440px;height:900px;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Noto Sans SC',sans-serif;font-size:15px;line-height:1.75;display:flex;flex-direction:column}
+.mono{font-family:'JetBrains Mono',monospace}
+/* 顶部状态条 */
+.bar{height:60px;display:flex;align-items:center;gap:14px;padding:0 30px;border-bottom:1px solid var(--line)}
+.brand{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:20px;letter-spacing:.14em;color:var(--cyan)}
+.pills{display:flex;gap:8px;margin-left:8px}
+.pill{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);border:1px solid var(--line);padding:3px 10px}
+.pill b{color:var(--cyan);font-weight:500}
+.bar .right{margin-left:auto;display:flex;gap:12px;align-items:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text)}
+.bar .count{color:var(--amber);border:1px solid rgba(255,180,84,.3);padding:3px 10px;font-size:11px}
+/* 主体两栏 */
+.main{flex:1;display:grid;grid-template-columns:1fr 360px;gap:0;min-height:0}
+.paper{padding:34px 44px 20px 40px;border-right:1px solid var(--line)}
+.kicker{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--dim)}
+.paper h1{font-family:'Rajdhani','Noto Sans SC',sans-serif;font-weight:700;font-size:44px;line-height:1.12;margin:6px 0 4px;letter-spacing:.02em}
+.paper h1 small{display:block;font-size:15px;color:var(--dim);font-weight:400;font-family:'Noto Sans SC';letter-spacing:.3em;margin-top:4px}
+.paper .rule{height:1px;background:linear-gradient(90deg,var(--cyan),transparent);margin:16px 0 18px;opacity:.5}
+.news li{list-style:none;display:flex;gap:12px;padding:8.5px 0;font-size:15px;border-bottom:1px dashed rgba(122,218,255,.08)}
+.news .tag{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);border:1px solid var(--line);height:20px;padding:0 6px;line-height:19px;flex:none;margin-top:3px}
+.news .tag.hot{color:var(--amber);border-color:rgba(255,180,84,.35)}
+.news b{color:var(--text)}
+.quote{margin-top:18px;padding:14px 18px;border-left:2px solid var(--cyan);background:rgba(56,225,255,.04);font-size:14.5px;color:var(--text)}
+.quote .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--cyan);display:block;margin-bottom:4px}
+/* 右栏 */
+.rail{padding:30px 28px;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+.panel h3{font-family:'Rajdhani',sans-serif;font-size:14px;letter-spacing:.24em;color:var(--cyan);margin-bottom:10px}
+.tl{border:1px solid var(--line);background:var(--panel)}
+.tl .row{display:flex;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(122,218,255,.08);font-size:13px}
+.tl .row:last-child{border:0}
+.tl .st{font-family:'JetBrains Mono',monospace;font-size:10px;width:86px;flex:none;letter-spacing:.06em}
+.st.done{color:var(--dim)} .st.run{color:var(--cyan)} .st.wait{color:var(--amber)}
+.inbox{border:1px solid rgba(255,180,84,.3);background:rgba(255,180,84,.05);padding:12px 14px;font-size:13px}
+.inbox .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--amber);display:block;margin-bottom:4px}
+/* 底部数据地平线 */
+.horizon{height:86px;border-top:1px solid var(--line);position:relative;background:linear-gradient(180deg,rgba(9,13,18,0),rgba(9,13,18,.9))}
+.horizon svg{position:absolute;bottom:0;left:0;width:1440px;height:78px;opacity:.9}
+.horizon .cap{position:absolute;top:8px;left:30px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.18em;color:var(--dim)}
+.horizon .cap b{color:var(--cyan);font-weight:500}
+.horizon .bcn{position:absolute;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--amber)}
+</style>
+</head>
+<body>
+<div class="bar">
+  <span class="brand">PROJECT-X // 舰桥</span>
+  <span class="pills">
+    <span class="pill"><b>DAEMON</b> 在线</span><span class="pill"><b>GLM-5.3-FLASH</b></span>
+    <span class="pill"><b>记忆</b> 43</span><span class="pill"><b>REGISTRY</b> 20</span><span class="pill"><b>代理</b> :7890</span>
+  </span>
+  <span class="right"><span class="count">距晚班 03:12:44</span><span class="mono">17:47:16</span></span>
+</div>
+
+<div class="main">
+  <div class="paper">
+    <div class="kicker">DAILY BRIEFING // 2026-10-14 WED</div>
+    <h1>今日早报<small>周三 · 第 8 期 · 巨构终端</small></h1>
+    <div class="rule"></div>
+    <ul class="news">
+      <li><span class="tag">国内</span><span><b>全国卫生与健康大会</b>召开，部署"十五五"卫生健康道路</span></li>
+      <li><span class="tag">国内</span><span><b>WIPO 全球创新集群</b>：中国 25 个上榜，连续四年世界第一</span></li>
+      <li><span class="tag">国际</span><span><b>霍尔木兹海峡</b> 6 船遇袭，4 艘油轮被不明发射物击中</span></li>
+      <li><span class="tag hot">科技</span><span><b>iPhone 断网跑 35B</b> 国产开源模型——端侧大模型再下一城</span></li>
+      <li><span class="tag hot">科技</span><span><b>Meta Muse Wonder</b> 发布：Muse Spark 的跨代升级</span></li>
+      <li><span class="tag">开源</span><span><b>rea</b> 七天 20.6 万★，"agent 逆向"进入平台期高位</span></li>
+    </ul>
+    <div class="quote"><span class="k">AI 一句话</span>模型供给空前充裕——对"大脑可插拔"的自建助手是直接利好；真正的稀缺从来不是模型，是让模型长本事的挂载点。</div>
+  </div>
+
+  <div class="rail">
+    <div class="panel">
+      <h3>任务线 // TASKS</h3>
+      <div class="tl">
+        <div class="row"><span class="st done">✅ DONE</span><span>Trending 月榜深读 · 9 项交付</span></div>
+        <div class="row"><span class="st run">⏳ RUNNING</span><span>记忆固化 · 周日 22:00 预定</span></div>
+        <div class="row"><span class="st wait">🔔 WAITING</span><span>write_file · reports/r2.md</span></div>
+        <div class="row"><span class="st done">✅ DONE</span><span>主动扫描 · rea 速报已推</span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>收件箱 // INBOX</h3>
+      <div class="inbox"><span class="k">待重排 ×1</span>进度面板方案 v1 —— 批复即按新 4 天窗开工</div>
+    </div>
+  </div>
+</div>
+
+<div class="horizon">
+  <div class="cap">DATA HORIZON // <b>信标 = 待办</b> · 楼影 = 子系统负载</div>
+  <svg viewBox="0 0 1440 78" preserveAspectRatio="none">
+    <g fill="#0d141c">
+      <rect x="40" y="30" width="70" height="48"/><rect x="150" y="14" width="46" height="64"/>
+      <rect x="260" y="38" width="90" height="40"/><rect x="420" y="8" width="34" height="70"/>
+      <rect x="520" y="30" width="64" height="48"/><rect x="640" y="20" width="40" height="58"/>
+      <rect x="760" y="34" width="100" height="44"/><rect x="920" y="10" width="30" height="68"/>
+      <rect x="1010" y="28" width="70" height="50"/><rect x="1140" y="18" width="44" height="60"/>
+      <rect x="1260" y="36" width="110" height="42"/>
+    </g>
+    <g fill="#38e1ff" opacity=".75">
+      <rect x="160" y="24" width="3" height="5"/><rect x="176" y="24" width="3" height="5"/><rect x="160" y="38" width="3" height="5"/><rect x="176" y="52" width="3" height="5"/>
+      <rect x="428" y="20" width="3" height="5"/><rect x="428" y="34" width="3" height="5"/><rect x="428" y="48" width="3" height="5"/>
+      <rect x="655" y="30" width="3" height="5"/><rect x="668" y="44" width="3" height="5"/>
+      <rect x="930" y="18" width="3" height="5"/><rect x="930" y="32" width="3" height="5"/><rect x="930" y="46" width="3" height="5"/><rect x="930" y="60" width="3" height="5"/>
+      <rect x="1160" y="26" width="3" height="5"/><rect x="1176" y="40" width="3" height="5"/>
+      <rect x="80" y="38" width="3" height="5"/><rect x="100" y="38" width="3" height="5"/>
+      <rect x="285" y="46" width="3" height="5"/><rect x="305" y="46" width="3" height="5"/>
+      <rect x="545" y="38" width="3" height="5"/><rect x="560" y="38" width="3" height="5"/>
+      <rect x="800" y="44" width="3" height="5"/><rect x="830" y="44" width="3" height="5"/>
+      <rect x="1040" y="36" width="3" height="5"/><rect x="1060" y="36" width="3" height="5"/>
+      <rect x="1310" y="48" width="3" height="5"/><rect x="1340" y="48" width="3" height="5"/>
+    </g>
+    <circle cx="430" cy="4" r="3.5" fill="#ff5d5d"/>
+    <circle cx="933" cy="4" r="3.5" fill="#ff5d5d"/>
+  </svg>
+  <div class="bcn" style="left:400px;top:12px">收件箱 ×1</div>
+  <div class="bcn" style="left:903px;top:12px">等你确认 ×1</div>
+</div>
+</body>
+</html>

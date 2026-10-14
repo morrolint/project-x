@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<title>C · 档案塔 — 楼层叙事</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* 方向 C：电梯井即导航。骨架 = 右侧固定竖截面塔 + 左侧当前层内容。自包含样式。 */
+:root{--bg:#05070a;--panel:#090d12;--text:#cdd9e1;--dim:#5f7385;--cyan:#38e1ff;--amber:#ffb454;--red:#ff5d5d;--line:rgba(122,218,255,.14)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:1440px;height:900px;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Noto Sans SC',sans-serif;font-size:15px;line-height:1.75;display:flex}
+.mono{font-family:'JetBrains Mono',monospace}
+/* 顶部条（左半区） */
+.topline{position:absolute;top:0;left:0;right:300px;height:56px;display:flex;align-items:center;gap:14px;padding:0 30px;border-bottom:1px solid var(--line);z-index:5}
+.brand{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:20px;letter-spacing:.14em;color:var(--cyan)}
+.topline .pill{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);border:1px solid var(--line);padding:3px 10px}
+.topline .pill b{color:var(--cyan);font-weight:500}
+.topline .clock{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:13px}
+/* 电梯井（右侧竖截面） */
+.shaft{width:300px;height:100%;border-left:1px solid var(--line);background:linear-gradient(180deg,#070a0e,#05070a);position:relative;flex:none}
+.shaft h2{font-family:'Rajdhani',sans-serif;font-size:15px;letter-spacing:.26em;color:var(--dim);text-align:center;padding:22px 0 10px;border-bottom:1px solid var(--line)}
+.floors{position:absolute;top:70px;left:34px;right:34px;bottom:64px;display:flex;flex-direction:column-reverse;gap:10px}
+.floor{border:1px solid var(--line);background:#0a0f15;padding:10px 12px;display:flex;align-items:center;gap:10px;position:relative}
+.floor .fno{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:19px;color:var(--dim);width:34px}
+.floor .fname{font-size:13px;color:var(--dim);letter-spacing:.08em}
+.floor .fsub{font-family:'JetBrains Mono',monospace;font-size:10px;color:#3d4f5e;display:block}
+.floor.current{border-color:rgba(56,225,255,.55);background:rgba(56,225,255,.06)}
+.floor.current .fno,.floor.current .fname{color:var(--text)}
+.floor.current .fsub{color:var(--cyan)}
+.floor.current::before{content:"▸";position:absolute;left:-16px;color:var(--cyan);font-size:13px}
+/* 电梯轿厢指示 */
+.car{position:absolute;left:8px;width:14px;height:34px;border:1px solid var(--cyan);background:rgba(56,225,255,.18);box-shadow:0 0 12px rgba(56,225,255,.4)}
+.shaft .shaftcap{position:absolute;bottom:14px;left:0;right:0;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--dim)}
+/* 主内容层 */
+.floorpage{flex:1;position:relative;padding:96px 54px 40px 60px;overflow:hidden}
+.floorkicker{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.24em;color:var(--cyan)}
+.floorpage h1{font-family:'Rajdhani','Noto Sans SC',sans-serif;font-weight:700;font-size:40px;line-height:1.14;margin:8px 0 2px}
+.floorpage h1 small{display:block;font-size:14px;color:var(--dim);font-weight:400;letter-spacing:.28em;font-family:'Noto Sans SC';margin-top:6px}
+.rule{height:1px;background:linear-gradient(90deg,var(--cyan),transparent);margin:18px 0 16px;opacity:.5}
+.cols{display:grid;grid-template-columns:1.35fr 1fr;gap:38px}
+.news li{list-style:none;padding:8px 0;font-size:14.5px;border-bottom:1px dashed rgba(122,218,255,.08)}
+.news b{color:var(--text)}
+.news .src{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);margin-right:8px}
+.quote{margin-top:14px;padding:12px 16px;border-left:2px solid var(--cyan);background:rgba(56,225,255,.04);font-size:13.5px}
+.quote .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--cyan);display:block;margin-bottom:3px}
+.side .h{font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:.24em;color:var(--dim);margin-bottom:8px}
+.trow{display:flex;gap:8px;align-items:center;font-size:12.5px;padding:7px 10px;border:1px solid var(--line);margin-bottom:6px;background:#090d12}
+.trow .st{font-family:'JetBrains Mono',monospace;font-size:10px;width:80px;flex:none}
+.st.done{color:var(--dim)} .st.run{color:var(--cyan)} .st.wait{color:var(--amber)}
+.inbox{border:1px solid rgba(255,180,84,.3);background:rgba(255,180,84,.05);padding:10px 12px;font-size:12.5px;margin-top:14px}
+.inbox .k{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--amber);letter-spacing:.18em;display:block;margin-bottom:3px}
+.grids{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,transparent 0 47px,rgba(122,218,255,.03) 47px 48px)}
+</style>
+</head>
+<body>
+<div class="topline">
+  <span class="brand">PROJECT-X // 档案塔</span>
+  <span class="pill"><b>DAEMON</b> 在线</span>
+  <span class="pill"><b>记忆</b> 43</span>
+  <span class="pill"><b>距晚班</b> 03:12</span>
+  <span class="clock">17:47:16</span>
+</div>
+
+<div class="floorpage">
+  <div class="grids"></div>
+  <div class="floorkicker">FLOOR 01 // TODAY</div>
+  <h1>今日简报层<small>2026-10-14 · 周三 · 电梯已送达</small></h1>
+  <div class="rule"></div>
+  <div class="cols">
+    <div>
+      <ul class="news">
+        <li><span class="src">CN</span><b>全国卫生与健康大会</b>召开，部署"十五五"卫生健康道路</li>
+        <li><span class="src">CN</span><b>WIPO 创新集群</b>：中国 25 个上榜，连续四年世界第一</li>
+        <li><span class="src">INTL</span><b>霍尔木兹海峡</b> 6 船遇袭，4 艘油轮被不明发射物击中</li>
+        <li><span class="src">TECH</span><b>iPhone 断网跑 35B</b> 国产开源模型——端侧再下一城</li>
+        <li><span class="src">OSS</span><b>rea</b> 七天 20.6 万★，进入平台期高位</li>
+      </ul>
+      <div class="quote"><span class="k">AI 一句话</span>模型供给空前充裕；真正的稀缺是让模型长本事的挂载点。</div>
+    </div>
+    <div class="side">
+      <div class="h">本层货运 // TASKS</div>
+      <div class="trow"><span class="st done">✅ DONE</span>Trending 深读 · 9 项</div>
+      <div class="trow"><span class="st run">⏳ RUN</span>记忆固化 · 周日预定</div>
+      <div class="trow"><span class="st wait">🔔 WAIT</span>write_file · 等确认</div>
+      <div class="inbox"><span class="k">F4 寄件</span>进度面板方案 v1 · 待重排</div>
+    </div>
+  </div>
+</div>
+
+<div class="shaft">
+  <h2>ARCHIVE TOWER</h2>
+  <div class="car" style="bottom:96px"></div>
+  <div class="floors">
+    <div class="floor current"><span class="fno">F1</span><span class="fname">今日简报<span class="fsub">TODAY · 10-14</span></span></div>
+    <div class="floor"><span class="fno">F2</span><span class="fname">任务线<span class="fsub">TASKS · 5 态</span></span></div>
+    <div class="floor"><span class="fno">F3</span><span class="fname">记忆库<span class="fsub">MEMORY · 43</span></span></div>
+    <div class="floor"><span class="fno">F4</span><span class="fname">收件箱<span class="fsub">INBOX · 待重排 ×1</span></span></div>
+    <div class="floor"><span class="fno">F5</span><span class="fname">观测台<span class="fsub">TRENDING · rea 头条</span></span></div>
+  </div>
+  <div class="shaftcap">电梯井即导航 · 当前层常亮</div>
+</div>
+</body>
+</html>

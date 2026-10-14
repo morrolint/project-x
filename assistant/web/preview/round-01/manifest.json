@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "project": "Project X 个人助手桌面控制台（巨构套件适配）",
+  "brief": "每天打开就看到：今日简报精选、任务线五态、等你拍板的事、系统真状态；巨构品牌令牌既定",
+  "round": "01",
+  "nativeViewport": "1440x900",
+  "candidates": [
+    {
+      "id": "a",
+      "name": "数据巨构",
+      "concept": "天际线即仪表盘——每盏灯都是真数据，助手是一座住着的结构",
+      "typography": "Rajdhani 54px 宣言 + JetBrains Mono 标注 + Noto Sans SC 面板正文 13.5px",
+      "palette": ["#38e1ff", "#ffb454", "#05070a"],
+      "traits": ["全幅天际线主角", "楼群=子系统 灯=活动量 信标=待确认", "左下 HUD 内容面板"],
+      "source": "a-data-colossus.html"
+    },
+    {
+      "id": "b",
+      "name": "舰桥",
+      "concept": "内容即首屏——走上舰桥，今天的事已经在屏上；地平线信标提醒待办",
+      "typography": "Rajdhani 44px 报头 + Noto Sans SC 15px 编辑正文 + Mono 状态层 11px",
+      "palette": ["#38e1ff", "#ffb454", "#05070a"],
+      "traits": ["早报编辑级排版为中栏主角", "右栏任务线五态+收件箱", "底部数据地平线（信标=待办）"],
+      "source": "b-bridge.html"
+    },
+    {
+      "id": "c",
+      "name": "档案塔",
+      "concept": "电梯井即导航——探索一座塔，一层一个子系统，当前层常亮",
+      "typography": "Rajdhani 40px 层标题 + 层货运双栏 14.5px + 井内 Mono 楼层牌",
+      "palette": ["#38e1ff", "#ffb454", "#05070a"],
+      "traits": ["右侧固定竖截面塔=导航", "当前层青色常亮+电梯轿厢", "逐层向下探索的叙事结构"],
+      "source": "c-archive-tower.html"
+    }
+  ]
+}
