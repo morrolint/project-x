@@ -41,19 +41,39 @@ body{width:1440px;height:900px;overflow:hidden;background:var(--bg);color:var(--
 .telem{position:absolute;left:32px;top:92px;z-index:6}
 .telem .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.26em;color:var(--dim);margin-bottom:14px}
 .telem .row{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
-.telem .v{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:40px;line-height:1;color:var(--cyan);letter-spacing:.04em}
-.telem .v.warn{color:var(--amber)}
+.telem{border-left:2px solid rgba(56,225,255,.4);padding-left:16px}
+.telem .v{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:44px;line-height:1;color:var(--cyan);letter-spacing:.04em;text-shadow:0 0 22px rgba(56,225,255,.55)}
+.telem .v.warn{color:var(--amber);text-shadow:0 0 22px rgba(255,180,84,.5)}
 .telem .u{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.1em}
 /* 观测台雷达 */
 .radar{position:absolute;right:38px;top:88px;z-index:6;width:216px}
 .radar .cap{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--dim);text-align:center;margin-top:6px}
 .radar .cap b{color:var(--cyan);font-weight:500}
+.radar .sweep{transform-origin:108px 108px;animation:sweep 5s linear infinite}
+.radar .blip{animation:pulse 2.2s ease-in-out infinite}
+@keyframes sweep{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.radar .sweep,.radar .blip{animation:none}}
 /* 右下巨构宣言 */
 .declare{position:absolute;right:30px;bottom:30px;text-align:right;z-index:6}
-.declare h1{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:54px;letter-spacing:.1em;color:var(--text);line-height:1.05}
+.declare h1{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:64px;letter-spacing:.08em;color:var(--text);line-height:1.02;text-shadow:0 0 30px rgba(56,225,255,.28)}
+.declare h1 span{color:var(--cyan);text-shadow:0 0 26px rgba(56,225,255,.75)}
 .declare h1 span{color:var(--cyan)}
-.declare p{color:var(--dim);font-size:14px;margin-top:6px}
+.declare p{color:var(--dim);font-size:14px;margin-top:8px;font-family:'JetBrains Mono',monospace;letter-spacing:.14em}
+/* 氛围层 */
+.vignette{position:absolute;inset:0;pointer-events:none;z-index:8;background:radial-gradient(120% 90% at 50% 40%,transparent 55%,rgba(0,0,0,.55)),radial-gradient(90% 30% at 50% 104%,rgba(56,225,255,.14),transparent 70%)}
 .scanlines{position:absolute;inset:0;pointer-events:none;z-index:9;opacity:.5;background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(0,0,0,.14) 3px 4px)}
+/* 取景框四角 */
+.corner{position:absolute;width:26px;height:26px;z-index:10;opacity:.85}
+.corner.tl{top:66px;left:14px;border-top:1px solid var(--cyan);border-left:1px solid var(--cyan)}
+.corner.tr{top:66px;right:14px;border-top:1px solid var(--cyan);border-right:1px solid var(--cyan)}
+.corner.bl{bottom:14px;left:14px;border-bottom:1px solid var(--cyan);border-left:1px solid var(--cyan)}
+.corner.br{bottom:14px;right:14px;border-bottom:1px solid var(--cyan);border-right:1px solid var(--cyan)}
+/* 右缘竖排状态栏 */
+.vert{position:absolute;right:16px;top:50%;transform:translateY(-50%);writing-mode:vertical-rl;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.32em;color:var(--dim);z-index:6}
+.vert b{color:var(--cyan);font-weight:500}
+/* 底缘刻度尺 */
+.ruler{position:absolute;left:0;right:0;bottom:0;height:10px;z-index:7;background:repeating-linear-gradient(90deg,rgba(122,218,255,.25) 0 1px,transparent 1px 36px);opacity:.6}
 </style>
 </head>
 <body>
@@ -68,7 +88,7 @@ body{width:1440px;height:900px;overflow:hidden;background:var(--bg);color:var(--
 </div>
 
 <div class="stage">
-  <object data="skyline.svg" type="image/svg+xml" style="position:absolute;left:-40px;bottom:0;width:1560px;height:842px;pointer-events:none"></object>
+  <object data="skyline.svg" type="image/svg+xml" style="position:absolute;left:-40px;bottom:0;width:1560px;height:842px;pointer-events:none;filter:brightness(1.18) saturate(1.1) drop-shadow(0 0 18px rgba(56,225,255,.22))"></object>
   <!-- 数据楼群标注（灯是真的） -->
   <div class="blabel" style="left:170px;bottom:300px"><b>记忆塔</b>43 条 · 信标 ×2<span class="warn">等你确认</span></div>
   <div class="blabel" style="left:660px;bottom:250px"><b>报告楼</b>早报 ✓ 简报待班</div>
@@ -90,10 +110,10 @@ body{width:1440px;height:900px;overflow:hidden;background:var(--bg);color:var(--
     <line x1="108" y1="8" x2="108" y2="208" stroke="rgba(122,218,255,.1)"/>
     <line x1="8" y1="108" x2="208" y2="108" stroke="rgba(122,218,255,.1)"/>
     <path d="M108 108 L108 10 A98 98 0 0 1 178 44 Z" fill="rgba(56,225,255,.10)"/>
-    <line x1="108" y1="108" x2="108" y2="10" stroke="#38e1ff" stroke-width="1" opacity=".7"/>
-    <circle cx="150" cy="70" r="4" fill="#38e1ff"/><text x="158" y="68" fill="#cdd9e1" font-size="10" font-family="JetBrains Mono">rea</text>
-    <circle cx="80" cy="140" r="3" fill="#ffb454"/><text x="88" y="145" fill="#5f7385" font-size="10" font-family="JetBrains Mono">artcraft</text>
-    <circle cx="140" cy="150" r="3" fill="#ffb454"/><text x="148" y="155" fill="#5f7385" font-size="10" font-family="JetBrains Mono">gods-eye</text>
+    <g class="sweep"><line x1="108" y1="108" x2="108" y2="10" stroke="#38e1ff" stroke-width="1.2" opacity=".8"/><circle cx="108" cy="14" r="2" fill="#38e1ff"/></g>
+    <circle class="blip" cx="150" cy="70" r="4" fill="#38e1ff"/><text x="158" y="68" fill="#cdd9e1" font-size="10" font-family="JetBrains Mono">rea</text>
+    <circle class="blip" cx="80" cy="140" r="3" fill="#ffb454"/><text x="88" y="145" fill="#5f7385" font-size="10" font-family="JetBrains Mono">artcraft</text>
+    <circle class="blip" cx="140" cy="150" r="3" fill="#ffb454"/><text x="148" y="155" fill="#5f7385" font-size="10" font-family="JetBrains Mono">gods-eye</text>
     <circle cx="108" cy="108" r="2.5" fill="#38e1ff"/>
   </svg>
   <div class="cap">OBSERVATORY // <b>观测台</b> · 光点=在榜热</div>
@@ -114,6 +134,10 @@ body{width:1440px;height:900px;overflow:hidden;background:var(--bg);color:var(--
   <h1>巨构<span>·</span>运转中</h1>
   <p>每盏灯都是真实数据 —— 一座住着你助手的结构</p>
 </div>
+<div class="vignette"></div>
+<span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+<div class="vert">BAY 07 · <b>STRUCTURE 99.98%</b> · SIGNAL LOCKED · 建造者通道</div>
+<div class="ruler"></div>
 <div class="scanlines"></div>
 </body>
 </html>
