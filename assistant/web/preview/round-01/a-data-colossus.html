@@ -21,8 +21,8 @@ body{width:1440px;height:900px;overflow:hidden;background:var(--bg);color:var(--
 /* 楼群舞台 */
 .stage{position:absolute;inset:58px 0 0 0}
 .stage svg{position:absolute;inset:0;width:100%;height:100%}
-.blabel{position:absolute;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.12em;color:var(--dim)}
-.blabel b{display:block;color:var(--cyan);font-size:12px;font-weight:500}
+.blabel{position:absolute;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.12em;color:var(--dim);background:rgba(5,7,10,.62);padding:6px 10px;border:1px solid var(--line)}
+.blabel b{display:block;color:var(--cyan);font-size:14px;font-weight:500}
 .blabel .warn{color:var(--amber)}
 /* 左下内容面板 */
 .console{position:absolute;left:26px;bottom:26px;width:520px;background:rgba(9,13,18,.9);border:1px solid var(--line);padding:18px 22px;z-index:6}
@@ -37,6 +37,17 @@ body{width:1440px;height:900px;overflow:hidden;background:var(--bg);color:var(--
 .console li b{color:var(--text)}
 .console .foot{margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim)}
 .console .foot .warn{color:var(--amber)}
+/* 遥测读数（天空区密度） */
+.telem{position:absolute;left:32px;top:92px;z-index:6}
+.telem .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.26em;color:var(--dim);margin-bottom:14px}
+.telem .row{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
+.telem .v{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:40px;line-height:1;color:var(--cyan);letter-spacing:.04em}
+.telem .v.warn{color:var(--amber)}
+.telem .u{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.1em}
+/* 观测台雷达 */
+.radar{position:absolute;right:38px;top:88px;z-index:6;width:216px}
+.radar .cap{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--dim);text-align:center;margin-top:6px}
+.radar .cap b{color:var(--cyan);font-weight:500}
 /* 右下巨构宣言 */
 .declare{position:absolute;right:30px;bottom:30px;text-align:right;z-index:6}
 .declare h1{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:54px;letter-spacing:.1em;color:var(--text);line-height:1.05}
@@ -57,12 +68,35 @@ body{width:1440px;height:900px;overflow:hidden;background:var(--bg);color:var(--
 </div>
 
 <div class="stage">
-  <object data="skyline.svg" type="image/svg+xml" style="position:absolute;left:0;bottom:0;width:1440px;height:620px;pointer-events:none"></object>
+  <object data="skyline.svg" type="image/svg+xml" style="position:absolute;left:-40px;bottom:0;width:1560px;height:842px;pointer-events:none"></object>
   <!-- 数据楼群标注（灯是真的） -->
   <div class="blabel" style="left:170px;bottom:300px"><b>记忆塔</b>43 条 · 信标 ×2<span class="warn">等你确认</span></div>
   <div class="blabel" style="left:660px;bottom:250px"><b>报告楼</b>早报 ✓ 简报待班</div>
   <div class="blabel" style="left:1040px;bottom:290px"><b>REGISTRY 区</b>6 类 20 条</div>
-  <div class="blabel" style="left:960px;bottom:470px"><b>观测台</b>TRENDING · rea +54,679/日</div>
+</div>
+
+<div class="telem">
+  <div class="k">TELEMETRY // 巨构实时</div>
+  <div class="row"><span class="v">+54,679</span><span class="u">REA · 星/日<br/>七日 20.6 万★</span></div>
+  <div class="row"><span class="v warn">03:12:44</span><span class="u">距晚班<br/>调度器待命</span></div>
+  <div class="row"><span class="v">12.4k</span><span class="u">TOKEN · 今日<br/>23 次工具</span></div>
+</div>
+
+<div class="radar">
+  <svg viewBox="0 0 216 216" width="216" height="216">
+    <circle cx="108" cy="108" r="100" fill="rgba(9,13,18,.55)" stroke="rgba(122,218,255,.25)"/>
+    <circle cx="108" cy="108" r="66" fill="none" stroke="rgba(122,218,255,.16)"/>
+    <circle cx="108" cy="108" r="33" fill="none" stroke="rgba(122,218,255,.16)"/>
+    <line x1="108" y1="8" x2="108" y2="208" stroke="rgba(122,218,255,.1)"/>
+    <line x1="8" y1="108" x2="208" y2="108" stroke="rgba(122,218,255,.1)"/>
+    <path d="M108 108 L108 10 A98 98 0 0 1 178 44 Z" fill="rgba(56,225,255,.10)"/>
+    <line x1="108" y1="108" x2="108" y2="10" stroke="#38e1ff" stroke-width="1" opacity=".7"/>
+    <circle cx="150" cy="70" r="4" fill="#38e1ff"/><text x="158" y="68" fill="#cdd9e1" font-size="10" font-family="JetBrains Mono">rea</text>
+    <circle cx="80" cy="140" r="3" fill="#ffb454"/><text x="88" y="145" fill="#5f7385" font-size="10" font-family="JetBrains Mono">artcraft</text>
+    <circle cx="140" cy="150" r="3" fill="#ffb454"/><text x="148" y="155" fill="#5f7385" font-size="10" font-family="JetBrains Mono">gods-eye</text>
+    <circle cx="108" cy="108" r="2.5" fill="#38e1ff"/>
+  </svg>
+  <div class="cap">OBSERVATORY // <b>观测台</b> · 光点=在榜热</div>
 </div>
 
 <div class="console"><span class="c"></span>
