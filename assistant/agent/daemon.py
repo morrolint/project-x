@@ -40,6 +40,7 @@ from daemon_state import STATE_FILE, load_state, save_state  # noqa: E402
 import llm  # noqa: E402
 import memory  # noqa: E402
 import scheduler as scheduler_mod  # noqa: E402
+import evolve as evolve_mod  # noqa: E402
 import tasks as tasks_mod  # noqa: E402
 import tools as tools_mod  # noqa: E402
 
@@ -326,9 +327,23 @@ class Daemon:
             calls = msg.get("tool_calls") or []
             if not calls:
                 content = (msg.get("content") or "").strip() or "（空回复）"
+                tool_n = len([1 for m in msgs if m.get("role") == "tool"])
                 if self.task:
-                    self.task.finish("DONE", f"{len([1 for m in msgs if m.get('role') == 'tool'])} 次工具，{len(content)} 字交付")
+                    self.task.finish("DONE", f"{tool_n} 次工具，{len(content)} 字交付")
                     self.task.push(self.tg)
+                # 经验固化：非平凡任务（工具≥3）且非班次/内勤 → 异步提炼（cap-self-evolution）
+                if tool_n >= 3 and not self._internal:
+                    label = (self.history[-1]["content"][:24] if self.history else "任务")
+                    tg_ref, log_ref, msgs_ref = self.tg, self.log, list(msgs)
+
+                    def _evolve():
+                        try:
+                            result = evolve_mod.crystallize(msgs_ref, label, log_ref)
+                            if tg_ref and ("🧬" in result or "失败" in result):
+                                tg_ref.send(result)
+                        except Exception as ee:  # noqa: BLE001 —— 固化失败绝不断主流程
+                            log_ref.log("err", err=f"evolve: {ee}")
+                    threading.Thread(target=_evolve, daemon=True).start()
                 return self._say(content, reply_to, assistant_out=content)
             # 确认门分级：免确认路径（reports/ 等机器产物区）直行；班次轮次宽口径
             need_confirm = []
