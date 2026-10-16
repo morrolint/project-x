@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PROJECT-X // 舰桥控制台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#05070a;--panel:#090d12;--text:#cdd9e1;--dim:#5f7385;--cyan:#38e1ff;--amber:#ffb454;--red:#ff5d5d;--line:rgba(122,218,255,.14)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:'Noto Sans SC',sans-serif;font-size:14px;line-height:1.7;overflow:hidden}
+.mono{font-family:'JetBrains Mono',monospace}
+.bar{height:56px;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:1px solid var(--line);flex:none}
+.brand{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:19px;letter-spacing:.14em;color:var(--cyan)}
+.pill{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);border:1px solid var(--line);padding:3px 9px}
+.pill b{color:var(--cyan);font-weight:500}
+.bar .right{margin-left:auto;display:flex;gap:10px;align-items:center;font-family:'JetBrains Mono',monospace;font-size:12px}
+.count{color:var(--amber);border:1px solid rgba(255,180,84,.3);padding:3px 9px;font-size:11px}
+.main{flex:1;display:grid;grid-template-columns:1fr 350px;min-height:0}
+.paper{padding:26px 34px;overflow-y:auto;border-right:1px solid var(--line)}
+.kicker{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--dim)}
+.paper h1{font-family:'Rajdhani','Noto Sans SC',sans-serif;font-weight:700;font-size:34px;margin:4px 0 2px}
+.paper h1 small{display:block;font-size:13px;color:var(--dim);font-weight:400;letter-spacing:.28em;font-family:'Noto Sans SC'}
+.rule{height:1px;background:linear-gradient(90deg,var(--cyan),transparent);margin:14px 0;opacity:.5}
+.paper h3{font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:.24em;color:var(--cyan);margin:16px 0 8px}
+.paper .sec{font-size:14px;white-space:pre-wrap}
+.rail{padding:22px 20px;display:flex;flex-direction:column;gap:16px;min-height:0}
+.panel h3{font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:.24em;color:var(--cyan);margin-bottom:8px}
+.tl{border:1px solid var(--line);background:var(--panel);max-height:210px;overflow-y:auto}
+.tl .row{display:flex;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid rgba(122,218,255,.08);font-size:12.5px}
+.tl .row:last-child{border:0}
+.st{font-family:'JetBrains Mono',monospace;font-size:10px;width:96px;flex:none;letter-spacing:.05em}
+.st.DONE{color:var(--dim)}.st.RUNNING{color:var(--cyan)}.st.WAITING_USER{color:var(--amber)}.st.FAILED{color:var(--red)}
+.inbox{border:1px solid rgba(255,180,84,.3);background:rgba(255,180,84,.05);padding:10px 12px;font-size:12.5px;white-space:pre-wrap}
+.inbox .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--amber);display:block;margin-bottom:4px}
+.chat{flex:1;display:flex;flex-direction:column;min-height:0}
+.log{flex:1;overflow-y:auto;border:1px solid var(--line);background:var(--panel);padding:12px;font-size:13px}
+.log .u{color:var(--cyan)} .log .a{color:var(--text)} .log div{margin-bottom:8px;white-space:pre-wrap}
+.chatbar{display:flex;gap:8px;margin-top:8px}
+.chatbar input{flex:1;background:#0a0f15;border:1px solid var(--line);color:var(--text);padding:9px 12px;font-family:inherit;font-size:13.5px;outline:none}
+.chatbar input:focus{border-color:rgba(56,225,255,.5)}
+.chatbar button{background:rgba(56,225,255,.12);border:1px solid rgba(56,225,255,.4);color:var(--cyan);padding:9px 18px;font-family:'Rajdhani',sans-serif;font-size:14px;letter-spacing:.2em;cursor:pointer}
+.chatbar button:disabled{opacity:.4;cursor:wait}
+.hint{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);margin-top:6px}
+@media(max-width:900px){.main{grid-template-columns:1fr}.rail{display:none}}
+</style>
+</head>
+<body>
+<div class="bar">
+  <span class="brand">PROJECT-X // 舰桥</span>
+  <span class="pill" id="p-daemon"><b>DAEMON</b> …</span>
+  <span class="pill" id="p-model">…</span>
+  <span class="pill" id="p-mem">…</span>
+  <span class="pill" id="p-reg">…</span>
+  <span class="right"><span class="count" id="p-next">…</span><span id="p-time" class="mono">—</span></span>
+</div>
+
+<div class="main">
+  <div class="paper">
+    <div class="kicker">CONSOLE // 本机回环 · 无鉴权仅限本机与 Tailscale</div>
+    <h1>舰桥控制台<small>PROJECT X · 桌面助手</small></h1>
+    <div class="rule"></div>
+    <div class="sec" id="brief">加载中……</div>
+    <h3>今日 TOKEN</h3>
+    <div class="sec mono" id="tok">—</div>
+  </div>
+  <div class="rail">
+    <div class="panel chat">
+      <h3>对话 // 与助手</h3>
+      <div class="log" id="log"><div class="a">舰桥在线。下方输入即与助手对话（共用记忆与确认门）。</div></div>
+      <div class="chatbar">
+        <input id="inp" placeholder="对助手说……" autocomplete="off"/>
+        <button id="send">发送</button>
+      </div>
+      <div class="hint" id="hint">输入即发 · 回复同步返回 · 写文件等确认门操作会先返回预览，回复「确认」执行</div>
+    </div>
+    <div class="panel">
+      <h3>任务线 // TASKS</h3>
+      <div class="tl" id="tasks">…</div>
+    </div>
+    <div class="panel">
+      <h3>收件箱 // INBOX</h3>
+      <div class="inbox" id="inbox">…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+function esc(t){const d=document.createElement("div");d.textContent=t;return d.innerHTML}
+
+async function refresh(){
+  try{
+    const st = await (await fetch("/api/status")).json();
+    $("#p-daemon").innerHTML = "<b>DAEMON</b> " + esc(st.daemon);
+    $("#p-model").textContent = st.model;
+    $("#p-mem").innerHTML = "<b>记忆</b> " + st.memory + " 文件";
+    $("#p-reg").innerHTML = "<b>REGISTRY</b> " + st.registry;
+    $("#p-next").textContent = "下一班 " + (st.next_eta ? "剩 " + st.next_eta : "明早");
+    $("#p-time").textContent = st.time.slice(11,19);
+    $("#tok").textContent = "今日 " + st.tokens_today.toLocaleString() + " tokens";
+    $("#inbox").innerHTML = (st.inbox && st.inbox.length)
+      ? st.inbox.map(t=>`· ${esc(t)}`).join("<br>")
+      : "收件箱空。";
+    $("#tasks").innerHTML = st.tasks.length
+      ? st.tasks.map(t=>`<div class="row"><span class="st ${esc(t.state)}">${esc(t.state)}</span><span>${esc(t.label)}</span></div>`).join("")
+      : "<div class='row'><span class='st DONE'>—</span>暂无任务</div>";
+  }catch(e){ $("#p-daemon").innerHTML = "<b>DAEMON</b> 离线?"; }
+}
+function md2html(t){
+  const lines = esc(t).split("\n");
+  const out = [];
+  for(const ln of lines){
+    let l = ln
+      .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+    const h = l.match(/^(#{1,3})\s+(.*)$/);
+    if(h){ out.push(`<div style="font-family:Rajdhani,'Noto Sans SC';font-size:${h[1].length===1?20:h[1].length===2?16:14}px;color:var(--cyan);letter-spacing:.08em;margin:14px 0 6px">${h[2]}</div>`); continue; }
+    if(/^\s*[-*]\s+/.test(l) || /^\s*\d+\.\s+/.test(l)){ out.push(`<div style="padding-left:14px">· ${l.replace(/^\s*([-*]|\d+\.)\s+/,"")}</div>`); continue; }
+    if(!l.trim()){ continue; }
+    out.push(`<div>${l}</div>`);
+  }
+  return out.join("");
+}
+async function loadBrief(){
+  try{
+    const r = await fetch("/api/brief");
+    $("#brief").innerHTML = md2html(await r.text());
+  }catch(e){ $("#brief").textContent = "简报加载失败：" + e; }
+}
+async function send(){
+  const inp = $("#inp"), btn = $("#send");
+  const text = inp.value.trim();
+  if(!text || btn.disabled) return;
+  $("#log").insertAdjacentHTML("beforeend", `<div class="u">▶ ${esc(text)}</div>`);
+  inp.value = ""; btn.disabled = true; $("#hint").textContent = "助手工作中……";
+  $("#log").scrollTop = $("#log").scrollHeight;
+  try{
+    const r = await (await fetch("/api/chat", {method:"POST",
+      headers:{"Content-Type":"application/json"}, body: JSON.stringify({text})})).json();
+    $("#log").insertAdjacentHTML("beforeend", `<div class="a">${esc(r.reply || r.error || "（空）")}</div>`);
+  }catch(e){
+    $("#log").insertAdjacentHTML("beforeend", `<div class="a">⚠️ 请求失败：${esc(String(e))}</div>`);
+  }
+  btn.disabled = false; $("#hint").textContent = "输入即发 · 回复同步返回";
+  $("#log").scrollTop = $("#log").scrollHeight;
+}
+$("#send").addEventListener("click", send);
+$("#inp").addEventListener("keydown", e=>{ if(e.key==="Enter") send(); });
+refresh(); loadBrief();
+setInterval(refresh, 30000);
+</script>
+</body>
+</html>

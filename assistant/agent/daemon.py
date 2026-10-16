@@ -40,6 +40,7 @@ from daemon_state import STATE_FILE, load_state, save_state  # noqa: E402
 import llm  # noqa: E402
 import memory  # noqa: E402
 import scheduler as scheduler_mod  # noqa: E402
+import console as console_mod  # noqa: E402
 import evolve as evolve_mod  # noqa: E402
 import tasks as tasks_mod  # noqa: E402
 import tools as tools_mod  # noqa: E402
@@ -173,6 +174,8 @@ class Daemon:
         self.pending = None  # 确认门挂起态：{"messages": [...], "calls": [...], "task": TaskLine|None}
         self.task = None     # 当前任务线（进度面板）
         self._internal = False  # 班次/内勤轮次：宽口径免确认 + 不进对话历史
+        self._source = "tg"     # 回复路由：tg=推 Telegram；console=捕获返回网页
+        self.console_out = []   # console 源的回复捕获区
 
     def restore_pending(self, recovered):
         """启动恢复：把磁盘上 WAITING_USER 的任务重新挂回确认门。"""
@@ -185,13 +188,20 @@ class Daemon:
 
     # ---- 对外入口
 
-    def handle_text(self, text, reply_to=None):
-        """处理一条用户文本：跑完整轮 agent 循环（含确认门），把最终回复发出去。"""
+    def handle_text(self, text, reply_to=None, source="tg"):
+        """处理一条用户文本：跑完整轮 agent 循环（含确认门），把最终回复发出去。
+        source: "tg"（Telegram 通道）| "console"（网页控制台——回复捕获返回，不推 Telegram）。"""
+        self._source = source
         self._internal = False
-        self.history.append({"role": "user", "content": text})
+        if source == "tg":
+            self.history.append({"role": "user", "content": text})
         self.task = tasks_mod.TaskLine(kind="chat", label=text[:24])
-        self.task.push(self.tg, edit=False)
-        return self._dispatch(text, reply_to)
+        if source == "tg":
+            self.task.push(self.tg, edit=False)
+        result = self._dispatch(text, reply_to)
+        if source == "console":
+            return "\n".join(self.console_out) or "（空回复）"
+        return result
 
     def _dispatch(self, text, reply_to):
         if self.pending:
@@ -230,6 +240,11 @@ class Daemon:
             self.log.log("err", err=f"reflect: {type(e).__name__}: {e}")
         finally:
             self._internal = False
+
+    def handle_console_text(self, text):
+        """网页控制台对话入口：回复捕获返回（不推 Telegram），与 TG 共用循环/记忆/确认门。"""
+        self.console_out = []
+        return self.handle_text(text, source="console")
 
     def run_shift(self, kind):
         """内部班次（调度器或 --shift 触发）：独立于用户对话历史，宽口径免确认。
@@ -309,14 +324,15 @@ class Daemon:
                               for m in msgs if m.get("role") == "assistant"
                               for c in (m.get("tool_calls") or [])]
                 self.task.update(rounds=rnd + 1, last_tools=done_names)
-                if rnd >= 1:  # 首轮秒回的不刷屏，从第 2 轮起原地刷新进度
+                if rnd >= 1 and self._source != "console":  # 首轮秒回的不刷屏；网页源进度自显
                     self.task.push(self.tg)
             msg, usage, err = llm.chat(msgs, tools_mod.schemas())
             if err:
                 self.log.log("llm_err", err=err)
                 if self.task:
                     self.task.finish("FAILED", f"LLM 调用失败：{err[:80]}")
-                    self.task.push(self.tg)
+                    if self._source != "console":
+                        self.task.push(self.tg)
                 return self._say(f"⚠️ LLM 调用失败：{err}", reply_to)
             if usage:
                 self.log.log("llm", model=llm.model_name(), usage=usage)
@@ -330,7 +346,8 @@ class Daemon:
                 tool_n = len([1 for m in msgs if m.get("role") == "tool"])
                 if self.task:
                     self.task.finish("DONE", f"{tool_n} 次工具，{len(content)} 字交付")
-                    self.task.push(self.tg)
+                    if self._source != "console":
+                        self.task.push(self.tg)
                 # 经验固化：非平凡任务（工具≥3）且非班次/内勤 → 异步提炼（cap-self-evolution）
                 if tool_n >= 3 and not self._internal:
                     label = (self.history[-1]["content"][:24] if self.history else "任务")
@@ -359,12 +376,13 @@ class Daemon:
                 self.pending = {"messages": msgs, "calls": need_confirm, "task": self.task}
                 if self.task:  # WAITING_USER 落盘（tasks/<id>.json 唯一事实源，重启可恢复）
                     self.task.wait_user({"messages": msgs, "calls": need_confirm})
-                    self.task.push(self.tg)
+                    if self._source != "console":
+                        self.task.push(self.tg)
                 lines = [f"• {c['name']}：{tools_mod.preview(c['name'], c['args'])}"
                          for c in need_confirm]
                 confirm_text = ("⚠️ 需要你确认：\n" + "\n".join(lines) +
                                 "\n\n点下方按钮，或回复「确认」；其他内容视为取消并按新指令处理。")
-                if self.tg is not None and hasattr(self.tg, "send_confirm"):
+                if self._source != "console" and self.tg is not None and hasattr(self.tg, "send_confirm"):
                     err, _mid = self.tg.send_confirm(confirm_text)
                     if err:
                         return self._say(confirm_text, reply_to)
@@ -372,13 +390,17 @@ class Daemon:
                 return self._say(confirm_text, reply_to)
         if self.task:
             self.task.finish("FAILED", "工具循环轮次用尽")
-            self.task.push(self.tg)
+            if self._source != "console":
+                self.task.push(self.tg)
         return self._say("⚠️ 工具循环轮次用尽，先回复到这里；需要细节可以再问我。", reply_to)
 
     def _say(self, text, reply_to=None, assistant_out=None):
         if assistant_out is not None:
             self.history.append({"role": "assistant", "content": assistant_out})
         self.log.log("out", text=text[:500])
+        if self._source == "console":  # 网页对话：捕获回复，不推 Telegram
+            self.console_out.append(text)
+            return None
         if self.tg is None:
             print(text)
             return None
@@ -404,7 +426,26 @@ def run(tg_client, daemon):
     saved = load_state().get("update_offset")
     if saved and getattr(tg_client, "offset", 0) < saved:
         tg_client.offset = saved
+    # 崩溃自愈通知：距上次启动 <120s 视为异常重启（KeepAlive 拉起），主动告知
+    last_boot = load_state().get("last_boot_ts")
+    now_ts = time.time()
+    if last_boot and now_ts - float(last_boot) < 120 and tg_client is not None:
+        try:
+            tg_client.send("⚠️ daemon 异常重启过一次，已自动恢复（KeepAlive 拉起）。如连续出现请查 logs/。")
+        except Exception:  # noqa: BLE001
+            pass
+    save_state(last_boot_ts=now_ts)
     scheduler_mod.start(tg_client, daemon, stop)
+    # 桌面控制台（127.0.0.1 回环；端口 CONSOLE_PORT 覆盖）
+    try:
+        console_port = int(os.environ.get("CONSOLE_PORT", "8787"))
+        console_srv = console_mod.build_server(console_port, daemon, tg_client)
+        threading.Thread(target=console_srv.serve_forever, daemon=True).start()
+        daemon.log.log("boot", note=f"控制台 http://127.0.0.1:{console_port}")
+        print(f"控制台: http://127.0.0.1:{console_port}")
+    except OSError as e:
+        daemon.log.log("err", err=f"console: {e}")
+        print(f"控制台启动失败：{e}", file=sys.stderr)
     daemon.log.log("boot", note="daemon 启动（调度器+任务线已挂载）")
     print(f"daemon 已启动（chat={tg_client.chat_id}，model={llm.model_name()}），Ctrl-C 退出")
     fails = 0
