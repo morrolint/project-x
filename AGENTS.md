@@ -15,6 +15,12 @@
 架构分层、不变量、隐含假设、增长触发器见 [assistant/ARCHITECTURE.md](assistant/ARCHITECTURE.md)（改架构先读它）；
 重大决策的背景与取舍见 `docs/adr/`（ADR-001…006）。与本文冲突时以代码+本文为准并修订文档。
 
+## 工作协议（2026-10-16 用户定盘）
+
+- **UIUX 一律走 oil-ui**（~/.zcode/skills/oil-ui）：方向卡 → 对比 → 实况截图 → 独立评审，不自评通过。
+- **功能实现一律先过产品经理**：以 assistant/agent/personas/pm.md 的交付物标准立卡（问题/目标与指标/取舍/方案含被否项/风险与回滚/时间窗），实现后对照验收。
+- **多参照系约束产物**：测试套件（assistant/tests/）、registry 校验器、独立评审（oil-ui reviewer）、PM 验收、用户实况反馈——汇报产物时附"已过哪些"，没过的明说。禁止自我感觉良好。
+
 ## 蓝图
 
 - **v0（✅ 已完成 2026-10-07）**：确定性脚本——早报/晚间简报（抓取 → 渲染 markdown → 写 `assistant/reports/`），launchd/cron 驱动，接管下述自动化

@@ -5,6 +5,7 @@
 ## 待办
 
 - 【待重排】长任务进度面板方案 v1（10-10 交付，4 天实施窗已于 10-13 到期未批复）：内容仍有效，批复后按新 4 天窗实施（含确认门落盘与重启重复投递修复）
+- 深读 obra/superpowers 与 anthropics/claude-plugins-official README，评估技能吸收（superpowers→skills 方法层）与官方插件清单价值；需 curl/web 抓取能力或人工打开，纯方法吸收不涉安装
 
 ## 已完成
 

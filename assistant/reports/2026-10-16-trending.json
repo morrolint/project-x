@@ -1,0 +1,87 @@
+{
+ "morning": {
+  "fetched_at": "2026-10-16T08:01:05",
+  "repos": [
+   {
+    "name": "morluto/rea",
+    "url": "https://github.com/morluto/rea",
+    "desc": "Reverse engineer anything with agents, from app behavior dow…",
+    "lang": "TypeScript",
+    "stars_total": 269441,
+    "stars_today": 32314
+   },
+   {
+    "name": "debpalash/VoiceStudio",
+    "url": "https://github.com/debpalash/VoiceStudio",
+    "desc": "VoiceStudio is the open-source, fully-local ElevenLabs alter…",
+    "lang": "Python",
+    "stars_total": 69031,
+    "stars_today": 3024
+   },
+   {
+    "name": "NationalSecurityAgency/ghidra",
+    "url": "https://github.com/NationalSecurityAgency/ghidra",
+    "desc": "Ghidra is a software reverse engineering (SRE) framework",
+    "lang": "Java",
+    "stars_total": 88719,
+    "stars_today": 1369
+   },
+   {
+    "name": "K-Dense-AI/scientific-agent-skills",
+    "url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+    "desc": "Turn any AI agent into an AI Scientist. The #1 Agent Skills…",
+    "lang": "Python",
+    "stars_total": 50443,
+    "stars_today": 1091
+   },
+   {
+    "name": "affaan-m/ECC",
+    "url": "https://github.com/affaan-m/ECC",
+    "desc": "The agent harness performance optimization system. Skills, i…",
+    "lang": "JavaScript",
+    "stars_total": 280349,
+    "stars_today": 1013
+   },
+   {
+    "name": "mksglu/context-mode",
+    "url": "https://github.com/mksglu/context-mode",
+    "desc": "Context window optimization for AI coding agents. Sandboxes…",
+    "lang": "TypeScript",
+    "stars_total": 29785,
+    "stars_today": 904
+   },
+   {
+    "name": "xerj-org/xerj",
+    "url": "https://github.com/xerj-org/xerj",
+    "desc": "XERJ is the new way for AI to search data. Its autoindex cap…",
+    "lang": "Rust",
+    "stars_total": 5614,
+    "stars_today": 715
+   },
+   {
+    "name": "obra/superpowers",
+    "url": "https://github.com/obra/superpowers",
+    "desc": "An agentic skills framework & software development methodolo…",
+    "lang": "Shell",
+    "stars_total": 299869,
+    "stars_today": 582
+   },
+   {
+    "name": "JuliusBrussee/caveman",
+    "url": "https://github.com/JuliusBrussee/caveman",
+    "desc": "🪨 why use many token when few token do trick. Viral skill +…",
+    "lang": "Go",
+    "stars_total": 112522,
+    "stars_today": 433
+   },
+   {
+    "name": "anthropics/claude-plugins-official",
+    "url": "https://github.com/anthropics/claude-plugins-official",
+    "desc": "Official, Anthropic-managed directory of high quality Claude…",
+    "lang": "Python",
+    "stars_total": 39058,
+    "stars_today": 307
+   }
+  ]
+ }
+}

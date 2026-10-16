@@ -1,0 +1,172 @@
+{
+ "morning": {
+  "fetched_at": "2026-10-15T08:00:47",
+  "repos": [
+   {
+    "name": "morluto/rea",
+    "url": "https://github.com/morluto/rea",
+    "desc": "Reverse engineer anything with agents, from app behavior dow…",
+    "lang": "TypeScript",
+    "stars_total": 241106,
+    "stars_today": 41034
+   },
+   {
+    "name": "debpalash/VoiceStudio",
+    "url": "https://github.com/debpalash/VoiceStudio",
+    "desc": "VoiceStudio is the open-source, fully-local ElevenLabs alter…",
+    "lang": "Python",
+    "stars_total": 66273,
+    "stars_today": 3538
+   },
+   {
+    "name": "ifixai-ai/iFixAi",
+    "url": "https://github.com/ifixai-ai/iFixAi",
+    "desc": "Independent Auditing of AI Agents. Run by human or the agent…",
+    "lang": "Python",
+    "stars_total": 27360,
+    "stars_today": 2109
+   },
+   {
+    "name": "xtool-org/xtool",
+    "url": "https://github.com/xtool-org/xtool",
+    "desc": "Cross-platform Xcode replacement. Build and deploy iOS apps…",
+    "lang": "Swift",
+    "stars_total": 10773,
+    "stars_today": 1502
+   },
+   {
+    "name": "vxcontrol/pentagi",
+    "url": "https://github.com/vxcontrol/pentagi",
+    "desc": "Fully autonomous AI Agents system capable of performing comp…",
+    "lang": "Go",
+    "stars_total": 29410,
+    "stars_today": 1025
+   },
+   {
+    "name": "NationalSecurityAgency/ghidra",
+    "url": "https://github.com/NationalSecurityAgency/ghidra",
+    "desc": "Ghidra is a software reverse engineering (SRE) framework",
+    "lang": "Java",
+    "stars_total": 87457,
+    "stars_today": 1008
+   },
+   {
+    "name": "mksglu/context-mode",
+    "url": "https://github.com/mksglu/context-mode",
+    "desc": "Context window optimization for AI coding agents. Sandboxes…",
+    "lang": "TypeScript",
+    "stars_total": 29096,
+    "stars_today": 947
+   },
+   {
+    "name": "rust-lang/rust",
+    "url": "https://github.com/rust-lang/rust",
+    "desc": "Empowering everyone to build reliable and efficient software…",
+    "lang": "Rust",
+    "stars_total": 120011,
+    "stars_today": 207
+   },
+   {
+    "name": "K-Dense-AI/scientific-agent-skills",
+    "url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+    "desc": "Turn any AI agent into an AI Scientist. The #1 Agent Skills…",
+    "lang": "Python",
+    "stars_total": 49308,
+    "stars_today": 163
+   },
+   {
+    "name": "ntdevlabs/tiny11builder",
+    "url": "https://github.com/ntdevlabs/tiny11builder",
+    "desc": "WinUI app for building smaller, customized Windows 11 images…",
+    "lang": "C#",
+    "stars_total": 20204,
+    "stars_today": 139
+   }
+  ]
+ },
+ "evening": {
+  "fetched_at": "2026-10-15T21:01:22",
+  "repos": [
+   {
+    "name": "morluto/rea",
+    "url": "https://github.com/morluto/rea",
+    "desc": "Reverse engineer anything with agents, from app behavior dow…",
+    "lang": "TypeScript",
+    "stars_total": 259442,
+    "stars_today": 32282
+   },
+   {
+    "name": "debpalash/VoiceStudio",
+    "url": "https://github.com/debpalash/VoiceStudio",
+    "desc": "VoiceStudio is the open-source, fully-local ElevenLabs alter…",
+    "lang": "Python",
+    "stars_total": 67984,
+    "stars_today": 3027
+   },
+   {
+    "name": "NationalSecurityAgency/ghidra",
+    "url": "https://github.com/NationalSecurityAgency/ghidra",
+    "desc": "Ghidra is a software reverse engineering (SRE) framework",
+    "lang": "Java",
+    "stars_total": 88204,
+    "stars_today": 1366
+   },
+   {
+    "name": "K-Dense-AI/scientific-agent-skills",
+    "url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+    "desc": "Turn any AI agent into an AI Scientist. The #1 Agent Skills…",
+    "lang": "Python",
+    "stars_total": 50011,
+    "stars_today": 1091
+   },
+   {
+    "name": "affaan-m/ECC",
+    "url": "https://github.com/affaan-m/ECC",
+    "desc": "The agent harness performance optimization system. Skills, i…",
+    "lang": "JavaScript",
+    "stars_total": 279906,
+    "stars_today": 1015
+   },
+   {
+    "name": "mksglu/context-mode",
+    "url": "https://github.com/mksglu/context-mode",
+    "desc": "Context window optimization for AI coding agents. Sandboxes…",
+    "lang": "TypeScript",
+    "stars_total": 29594,
+    "stars_today": 902
+   },
+   {
+    "name": "xerj-org/xerj",
+    "url": "https://github.com/xerj-org/xerj",
+    "desc": "XERJ is the new way for AI to search data. Its autoindex cap…",
+    "lang": "Rust",
+    "stars_total": 4839,
+    "stars_today": 725
+   },
+   {
+    "name": "obra/superpowers",
+    "url": "https://github.com/obra/superpowers",
+    "desc": "An agentic skills framework & software development methodolo…",
+    "lang": "Shell",
+    "stars_total": 299507,
+    "stars_today": 534
+   },
+   {
+    "name": "JuliusBrussee/caveman",
+    "url": "https://github.com/JuliusBrussee/caveman",
+    "desc": "🪨 why use many token when few token do trick. Viral skill +…",
+    "lang": "Go",
+    "stars_total": 112122,
+    "stars_today": 398
+   },
+   {
+    "name": "anthropics/claude-plugins-official",
+    "url": "https://github.com/anthropics/claude-plugins-official",
+    "desc": "Official, Anthropic-managed directory of high quality Claude…",
+    "lang": "Python",
+    "stars_total": 38377,
+    "stars_today": 181
+   }
+  ]
+ }
+}

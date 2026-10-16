@@ -152,13 +152,12 @@ def skills_index():
 class Logger:
     def __init__(self):
         LOGS_DIR.mkdir(parents=True, exist_ok=True)
-        self.path = LOGS_DIR / f"{datetime.now():%Y-%m-%d}.jsonl"
 
     def log(self, direction, **kv):
         rec = {"ts": datetime.now().isoformat(timespec="seconds"), "dir": direction}
         rec.update(kv)
-        try:
-            with open(self.path, "a", encoding="utf-8") as f:
+        try:  # 路径每次取当日：常驻 daemon 跨天必须换文件（2026-10-16 修复：曾把 10-15/16 事件全写进 10-14）
+            with open(LOGS_DIR / f"{datetime.now():%Y-%m-%d}.jsonl", "a", encoding="utf-8") as f:
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")
         except OSError:
             pass

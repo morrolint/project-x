@@ -75,5 +75,90 @@
     "stars_today": 190
    }
   ]
+ },
+ "evening": {
+  "fetched_at": "2026-10-14T21:00:27",
+  "repos": [
+   {
+    "name": "morluto/rea",
+    "url": "https://github.com/morluto/rea",
+    "desc": "Reverse engineer anything with agents, from app behavior dow…",
+    "lang": "TypeScript",
+    "stars_total": 227966,
+    "stars_today": 41187
+   },
+   {
+    "name": "debpalash/VoiceStudio",
+    "url": "https://github.com/debpalash/VoiceStudio",
+    "desc": "VoiceStudio is the open-source, fully-local ElevenLabs alter…",
+    "lang": "Python",
+    "stars_total": 65001,
+    "stars_today": 3547
+   },
+   {
+    "name": "ifixai-ai/iFixAi",
+    "url": "https://github.com/ifixai-ai/iFixAi",
+    "desc": "Independent Auditing of AI Agents. Run by human or the agent…",
+    "lang": "Python",
+    "stars_total": 26657,
+    "stars_today": 2143
+   },
+   {
+    "name": "vxcontrol/pentagi",
+    "url": "https://github.com/vxcontrol/pentagi",
+    "desc": "Fully autonomous AI Agents system capable of performing comp…",
+    "lang": "Go",
+    "stars_total": 28770,
+    "stars_today": 1819
+   },
+   {
+    "name": "xtool-org/xtool",
+    "url": "https://github.com/xtool-org/xtool",
+    "desc": "Cross-platform Xcode replacement. Build and deploy iOS apps…",
+    "lang": "Swift",
+    "stars_total": 10115,
+    "stars_today": 1510
+   },
+   {
+    "name": "NationalSecurityAgency/ghidra",
+    "url": "https://github.com/NationalSecurityAgency/ghidra",
+    "desc": "Ghidra is a software reverse engineering (SRE) framework",
+    "lang": "Java",
+    "stars_total": 86849,
+    "stars_today": 1002
+   },
+   {
+    "name": "mksglu/context-mode",
+    "url": "https://github.com/mksglu/context-mode",
+    "desc": "Context window optimization for AI coding agents. Sandboxes…",
+    "lang": "TypeScript",
+    "stars_total": 28747,
+    "stars_today": 946
+   },
+   {
+    "name": "rust-lang/rust",
+    "url": "https://github.com/rust-lang/rust",
+    "desc": "Empowering everyone to build reliable and efficient software…",
+    "lang": "Rust",
+    "stars_total": 120015,
+    "stars_today": 205
+   },
+   {
+    "name": "K-Dense-AI/scientific-agent-skills",
+    "url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+    "desc": "Turn any AI agent into an AI Scientist. The #1 Agent Skills…",
+    "lang": "Python",
+    "stars_total": 48913,
+    "stars_today": 146
+   },
+   {
+    "name": "ntdevlabs/tiny11builder",
+    "url": "https://github.com/ntdevlabs/tiny11builder",
+    "desc": "WinUI app for building smaller, customized Windows 11 images…",
+    "lang": "C#",
+    "stars_total": 20042,
+    "stars_today": 132
+   }
+  ]
  }
 }

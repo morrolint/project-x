@@ -171,6 +171,15 @@
       "added": "2026-10-14",
       "provenance": "源自用户自有项目 ~/Projects/arcology（巨构个人站）；2026-10-14 用户指令移入（'你才是本体'）作桌面助手 UI 底座：css 设计令牌+HUD 组件 / js 行为件 / skyline.svg",
       "note": "零依赖无构建；后续桌面控制台（webui）基于此套件渲染"
+    },
+    {
+      "id": "cap-self-evolution",
+      "type": "capability",
+      "impl": null,
+      "status": "proposed",
+      "added": "2026-10-16",
+      "provenance": "RSI 调研（research/2026-10-16-RSI-自进化调研.md）产出：经验固化（GenericAgent）+ 变更过门（Raven）+ 进化日志（evolver），自建零安装",
+      "note": "提案兼 PM 立卡见 proposals/2026-10-16-cap-self-evolution.md；批准后实施，预计 4-6 小时"
     }
   ]
 }

@@ -70,6 +70,8 @@ def _proactive_scan(daemon):
 def _weekly_reflect(daemon):
     """周日 22 点记忆固化（跑 daemon.run_reflect，LLM 归并日志→observations）。"""
     now = datetime.now()
+    if now.weekday() != 6:  # 仅周日（2026-10-16 修复：搬家时曾丢此门禁，导致周三误跑）
+        return
     week = f"{now.isocalendar().year}-W{now.isocalendar().week}"
     if load_state().get("reflect_week") == week:
         return
