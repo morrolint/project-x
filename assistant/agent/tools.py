@@ -1,4 +1,4 @@
-"""agent 工具集（v1 最小闭环 13 个）：收件箱 / 报告 / 文件与目录 / 活动 / 记忆。
+"""agent 工具集（v1 最小闭环 14 个）：收件箱 / 报告 / 文件与目录 / 活动 / 记忆。
 
 契约对齐 assistant/integrations/README.md：
 - 新增工具 = 本文件加一个 Tool 条目，schemas() 自动带给 LLM；
@@ -339,6 +339,12 @@ def remind_in(minutes, text):
     return f"已设提醒：{_dt.now() + __import__('datetime').timedelta(minutes=m):%m-%d %H:%M} —— {text[:60]}"
 
 
+def kb_search(query):
+    """检索本体知识库：架构/决策(ADR)/交接/技能方法/调研档案。回答"为什么这样做"类问题前先查。"""
+    import kb
+    return kb.kb_search(query, top=5) or "知识库无相关内容（可换个说法，或确认该决策未记录）。"
+
+
 def memory_save(text):
     from memory import retain
     return f"已写入记忆（{retain(str(text))}）：{str(text)[:80]}"
@@ -401,6 +407,10 @@ TOOLS = [
     Tool("activity", "查看助手最近的活动日志（干了什么/花了多少 token/有无错误）",
          {"days": {"type": "integer", "description": "回看天数，默认 1"}},
          [], activity_recent),
+    Tool("kb_search", "检索本体知识库（架构宪法/ADR 决策/交接文档/技能方法/调研档案）。"
+         "回答'为什么这样设计/当时的决策/有没有调研过'类问题前必查",
+         {"query": {"type": "string"}},
+         ["query"], kb_search),
     Tool("memory_search", "按关键词检索长期记忆",
          {"query": {"type": "string"}},
          ["query"], memory_search),
